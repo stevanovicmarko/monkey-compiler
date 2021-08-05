@@ -11,4 +11,8 @@ data class ReturnStatement(val tokenType: TokenType, val returnValue: Expression
         return tokenType.toString()
     }
 
+    override fun toString(): String {
+        return "${tokenLiteral()} $returnValue;"
+    }
+
 }
