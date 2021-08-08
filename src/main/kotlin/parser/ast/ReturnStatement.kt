@@ -1,8 +1,8 @@
-package parser
+package parser.ast
 
 import lexer.TokenType
 
-data class LetStatement(val tokenType: TokenType, val name: Identifier, val expression: Expression?): Statement {
+data class ReturnStatement(val tokenType: TokenType, val returnValue: Expression?): Statement {
     override fun statementNode() {
         TODO("Not yet implemented")
     }
@@ -12,7 +12,7 @@ data class LetStatement(val tokenType: TokenType, val name: Identifier, val expr
     }
 
     override fun toString(): String {
-        return "$tokenType $name = $expression;"
+        return "${tokenLiteral()} $returnValue;"
     }
 
 }

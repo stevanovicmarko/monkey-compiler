@@ -1,5 +1,8 @@
 package parser
 
+import parser.ast.Node
+import parser.ast.Statement
+
 
 class Program(var statements: MutableList<Statement>) : Node {
     override fun tokenLiteral(): String {
