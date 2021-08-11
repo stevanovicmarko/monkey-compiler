@@ -42,14 +42,14 @@ class Parser(private val lexer: Lexer) {
         registerPrefix(TokenType.BANG) { parsePrefixExpression() }
         registerPrefix(TokenType.MINUS) { parsePrefixExpression() }
 
-        registerInfix(TokenType.PLUS) { expression -> parseInfixExpression( expression as Expression) }
-        registerInfix(TokenType.MINUS) { expression -> parseInfixExpression( expression as Expression) }
-        registerInfix(TokenType.SLASH) { expression -> parseInfixExpression( expression as Expression) }
-        registerInfix(TokenType.ASTERISK) { expression -> parseInfixExpression( expression as Expression) }
-        registerInfix(TokenType.EQ) { expression -> parseInfixExpression( expression as Expression) }
-        registerInfix(TokenType.NOT_EQ) { expression -> parseInfixExpression( expression as Expression) }
-        registerInfix(TokenType.LT) { expression -> parseInfixExpression( expression as Expression) }
-        registerInfix(TokenType.GT) { expression -> parseInfixExpression( expression as Expression) }
+        registerInfix(TokenType.PLUS) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.MINUS) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.SLASH) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.ASTERISK) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.EQ) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.NOT_EQ) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.LT) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.GT) { expression -> parseInfixExpression(expression as Expression) }
     }
 
     private fun peekPrecedence(): Precedence {
@@ -91,7 +91,6 @@ class Parser(private val lexer: Lexer) {
     private fun registerInfix(tokenType: TokenType, fn: (expression: Expression?) -> Expression) {
         infixParseFunctions[tokenType] = fn
     }
-
 
     private fun peekError(tokenType: TokenType?) {
         errors.add(
@@ -194,7 +193,6 @@ class Parser(private val lexer: Lexer) {
             errors.add("could not parse $value as integer")
             null
         } else {
-            // TODO: get rid of null assertion
             IntegerLiteral(currentToken.tokenType, value)
         }
     }
