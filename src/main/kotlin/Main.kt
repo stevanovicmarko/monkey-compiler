@@ -12,7 +12,8 @@ fun main() {
 
 //    input = "a + b * c + d / e - f"
 //    input = "(!(true == true))"
-    input = "if (x < y) { x }"
+//    input = "if (x < y) { x }"
+    input = "fn(x, y) { x + y; }"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()

@@ -45,6 +45,7 @@ class Parser(private val lexer: Lexer) {
         registerPrefix(TokenType.TRUE) { parseBoolean() }
         registerPrefix(TokenType.FALSE) { parseBoolean() }
         registerPrefix(TokenType.IF) { parseIfExpression() }
+        registerPrefix(TokenType.FUNCTION) { parseFunctionLiteral() }
 
         registerInfix(TokenType.PLUS) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.MINUS) { expression -> parseInfixExpression(expression as Expression) }
@@ -56,36 +57,17 @@ class Parser(private val lexer: Lexer) {
         registerInfix(TokenType.GT) { expression -> parseInfixExpression(expression as Expression) }
     }
 
+    private fun nextToken() {
+        currentToken = peekToken
+        peekToken = lexer.nextToken()
+    }
+
     private fun peekPrecedence(): Precedence {
         return precedences[peekToken.tokenType] ?: Precedence.LOWEST
     }
 
     private fun currentPrecedence(): Precedence {
         return precedences[currentToken.tokenType] ?: Precedence.LOWEST
-    }
-
-    private fun parseInfixExpression(left: Expression): Expression {
-        val expression = InfixExpression(currentToken.tokenType, left, currentToken.literal, null)
-        val precedence = currentPrecedence()
-        nextToken()
-        expression.right = parseExpression(precedence)
-        return expression
-    }
-
-    private fun parsePrefixExpression(): Expression {
-        val expression = PrefixExpression(currentToken.tokenType, currentToken.literal, null)
-        nextToken()
-        expression.right = parseExpression(Precedence.PREFIX)
-        return expression
-    }
-
-    private fun parseIdentifier(): Expression {
-        return Identifier(currentToken.tokenType, currentToken.literal)
-    }
-
-    private fun nextToken() {
-        currentToken = peekToken
-        peekToken = lexer.nextToken()
     }
 
     private fun registerPrefix(tokenType: TokenType, fn: () -> Expression?) {
@@ -122,6 +104,25 @@ class Parser(private val lexer: Lexer) {
             peekError(tokenType)
             false
         }
+    }
+
+    private fun parseInfixExpression(left: Expression): Expression {
+        val expression = InfixExpression(currentToken.tokenType, left, currentToken.literal, null)
+        val precedence = currentPrecedence()
+        nextToken()
+        expression.right = parseExpression(precedence)
+        return expression
+    }
+
+    private fun parsePrefixExpression(): Expression {
+        val expression = PrefixExpression(currentToken.tokenType, currentToken.literal, null)
+        nextToken()
+        expression.right = parseExpression(Precedence.PREFIX)
+        return expression
+    }
+
+    private fun parseIdentifier(): Expression {
+        return Identifier(currentToken.tokenType, currentToken.literal)
     }
 
     private fun parseLetStatement(): Statement? {
@@ -228,6 +229,49 @@ class Parser(private val lexer: Lexer) {
             nextToken()
         }
         return block
+    }
+
+    private fun parseFunctionLiteral(): Expression? {
+        val literal = FunctionLiteral(currentToken.tokenType, mutableListOf(), null)
+
+        if (!expectPeek(TokenType.LPAREN)) {
+            return null
+        }
+        literal.parameters = parseFunctionParameters()
+
+        if (!expectPeek(TokenType.LBRACE)) {
+            return null
+        }
+
+        literal.body = parseBlockStatement()
+
+        return literal
+    }
+
+    private fun parseFunctionParameters(): MutableList<Identifier>? {
+        val identifiers = mutableListOf<Identifier>()
+
+        if (peekTokenIs(TokenType.RPAREN)) {
+            nextToken()
+            return identifiers
+        }
+
+        nextToken()
+        var identifier = Identifier(currentToken.tokenType, currentToken.literal)
+        identifiers.add(identifier)
+
+        while (peekTokenIs(TokenType.COMMA)) {
+              nextToken()
+              nextToken()
+              identifier = Identifier(currentToken.tokenType, currentToken.literal)
+              identifiers.add(identifier)
+        }
+
+        if (!expectPeek(TokenType.RPAREN)) {
+            return null
+        }
+
+        return identifiers
     }
 
 

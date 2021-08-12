@@ -5,14 +5,14 @@ class Lexer(private val input: String) {
     private var currentCharacter: Char = input.first()
     private val tokens: MutableList<Token> = mutableListOf()
     private val keywordsMap: Map<String, TokenType> = mapOf(
-        "function" to TokenType.FUNCTION,
+        "fn" to TokenType.FUNCTION,
         "let" to TokenType.LET,
         "true" to TokenType.TRUE,
         "false" to TokenType.FALSE,
         "if" to TokenType.IF,
         "else" to TokenType.ELSE,
         "return" to TokenType.RETURN
-    );
+    )
 
     private fun readIdentifier() {
         val position = lexPosition
