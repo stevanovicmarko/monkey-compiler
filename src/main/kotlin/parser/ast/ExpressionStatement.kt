@@ -15,7 +15,6 @@ data class ExpressionStatement(
     }
 
     override fun toString(): String {
-        // TODO: Fix expression logging
         return expression.toString()
     }
 

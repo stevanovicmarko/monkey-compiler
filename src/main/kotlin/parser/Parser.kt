@@ -37,10 +37,14 @@ class Parser(private val lexer: Lexer) {
 
     init {
         nextToken()
+        registerPrefix(TokenType.LPAREN) { parseGroupedExpression() }
         registerPrefix(TokenType.IDENT) { parseIdentifier() }
         registerPrefix(TokenType.INT) { parseIntegerLiteral() }
         registerPrefix(TokenType.BANG) { parsePrefixExpression() }
         registerPrefix(TokenType.MINUS) { parsePrefixExpression() }
+        registerPrefix(TokenType.TRUE) { parseBoolean() }
+        registerPrefix(TokenType.FALSE) { parseBoolean() }
+        registerPrefix(TokenType.IF) { parseIfExpression() }
 
         registerInfix(TokenType.PLUS) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.MINUS) { expression -> parseInfixExpression(expression as Expression) }
@@ -186,6 +190,17 @@ class Parser(private val lexer: Lexer) {
         return statement
     }
 
+    private fun parseGroupedExpression(): Expression? {
+        nextToken()
+        val expression = parseExpression(Precedence.LOWEST)
+
+        if (!expectPeek(TokenType.RPAREN)) {
+            return null
+        }
+
+        return  expression
+    }
+
     private fun parseIntegerLiteral(): Expression? {
         val value = currentToken.literal.toIntOrNull()
 
@@ -195,6 +210,62 @@ class Parser(private val lexer: Lexer) {
         } else {
             IntegerLiteral(currentToken.tokenType, value)
         }
+    }
+
+    private fun parseBoolean(): Expression {
+        return BooleanLiteral(currentToken.tokenType, currentTokenIs(TokenType.TRUE))
+    }
+
+    private fun parseBlockStatement(): BlockStatement {
+        val block = BlockStatement(currentToken.tokenType, mutableListOf())
+        nextToken()
+
+        while(!currentTokenIs(TokenType.RBRACE) && !currentTokenIs(TokenType.EOF)) {
+            val statement = parseStatement()
+            if (statement != null) {
+                block.statements.add(statement)
+            }
+            nextToken()
+        }
+        return block
+    }
+
+
+    private fun parseIfExpression(): Expression? {
+        val expression = IfExpression(TokenType.IF, null, null, null)
+
+        if (!expectPeek(TokenType.LPAREN)) {
+            return null
+        }
+
+        nextToken()
+
+        expression.condition = parseExpression(Precedence.LOWEST)
+
+        if (!expectPeek(TokenType.RPAREN)) {
+            return null
+        }
+
+        if (!expectPeek(TokenType.LBRACE)) {
+            return null
+        }
+
+        expression.consequence = parseBlockStatement()
+
+        if(peekTokenIs(TokenType.ELSE)) {
+            nextToken()
+            if (!expectPeek(TokenType.LBRACE)) {
+                return null
+            }
+
+            expression.alternative = parseBlockStatement()
+        }
+
+        return expression
+    }
+
+    private fun noPrefixParseFunctionError(tokenType: TokenType) {
+        errors.add("no prefix parse function for $tokenType found")
     }
 
     fun parseProgram(): Program {
@@ -209,10 +280,5 @@ class Parser(private val lexer: Lexer) {
         }
         return program
     }
-
-    private fun noPrefixParseFunctionError(tokenType: TokenType) {
-        errors.add("no prefix parse function for $tokenType found")
-    }
-
 
 }

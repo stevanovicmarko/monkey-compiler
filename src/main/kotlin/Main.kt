@@ -10,7 +10,9 @@ fun main() {
         let foobar = 838383;
         """.trimIndent()
 
-    input = "a + b * c + d / e - f"
+//    input = "a + b * c + d / e - f"
+//    input = "(!(true == true))"
+    input = "if (x < y) { x }"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
