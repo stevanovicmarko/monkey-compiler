@@ -2,7 +2,8 @@ package parser.ast
 
 import lexer.TokenType
 
-data class IntegerLiteral(val tokenType: TokenType, val value: Int): Expression {
+data class CallExpression(val tokenType: TokenType, val function: Expression, val arguments: MutableList<Expression?>?) :
+    Expression {
     override fun expressionNode() {
         TODO("Not yet implemented")
     }
@@ -12,7 +13,7 @@ data class IntegerLiteral(val tokenType: TokenType, val value: Int): Expression 
     }
 
     override fun toString(): String {
-        return "<${tokenLiteral()}, value = $value>"
+        return "${tokenLiteral()} ( ${arguments?.joinToString(", ")} )"
     }
 
 }

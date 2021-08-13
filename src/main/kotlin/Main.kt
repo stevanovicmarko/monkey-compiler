@@ -1,7 +1,6 @@
 import lexer.Lexer
 
 import parser.Parser
-import parser.ast.IntegerLiteral
 
 fun main() {
     var input = """
@@ -13,7 +12,8 @@ fun main() {
 //    input = "a + b * c + d / e - f"
 //    input = "(!(true == true))"
 //    input = "if (x < y) { x }"
-    input = "fn(x, y) { x + y; }"
+//    input = "fn(x, y) { x + y; }"
+    input = "add(1, 2 * 3, 4 + 5);"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()

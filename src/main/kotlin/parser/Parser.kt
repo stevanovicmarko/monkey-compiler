@@ -24,6 +24,7 @@ class Parser(private val lexer: Lexer) {
     }
 
     private val precedences = mapOf(
+        TokenType.LPAREN to Precedence.CALL,
         TokenType.EQ to Precedence.EQUALS,
         TokenType.NOT_EQ to Precedence.EQUALS,
         TokenType.LT to Precedence.LESSGREATER,
@@ -33,7 +34,6 @@ class Parser(private val lexer: Lexer) {
         TokenType.SLASH to Precedence.PRODUCT,
         TokenType.ASTERISK to Precedence.PRODUCT
     )
-
 
     init {
         nextToken()
@@ -55,6 +55,7 @@ class Parser(private val lexer: Lexer) {
         registerInfix(TokenType.NOT_EQ) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.LT) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.GT) { expression -> parseInfixExpression(expression as Expression) }
+        registerInfix(TokenType.LPAREN) { expression -> parseCallExpression(expression as Expression) }
     }
 
     private fun nextToken() {
@@ -274,6 +275,33 @@ class Parser(private val lexer: Lexer) {
         return identifiers
     }
 
+    private fun parseCallArguments(): MutableList<Expression?>? {
+        val arguments = mutableListOf<Expression?>()
+
+        if (peekTokenIs(TokenType.RPAREN)) {
+            nextToken()
+            return arguments
+        }
+
+        nextToken()
+        arguments.add(parseExpression(Precedence.LOWEST))
+
+        while (peekTokenIs(TokenType.COMMA)) {
+            nextToken()
+            nextToken()
+            arguments.add(parseExpression(Precedence.LOWEST))
+        }
+
+        if (!expectPeek(TokenType.RPAREN)) {
+            return null
+        }
+
+        return arguments
+    }
+
+    private fun parseCallExpression(func: Expression): Expression {
+        return CallExpression(currentToken.tokenType, func, parseCallArguments())
+    }
 
     private fun parseIfExpression(): Expression? {
         val expression = IfExpression(TokenType.IF, null, null, null)
