@@ -4,6 +4,7 @@ import lexer.Lexer
 import lexer.Token
 import lexer.TokenType
 import parser.ast.*
+import kotlin.math.exp
 
 
 class Parser(private val lexer: Lexer) {
@@ -127,29 +128,39 @@ class Parser(private val lexer: Lexer) {
     }
 
     private fun parseLetStatement(): Statement? {
-        val currentTokenType: TokenType = currentToken.tokenType
+        val statement = LetStatement(currentToken.tokenType, null, null)
+
         if (!expectPeek(TokenType.IDENT)) {
             return null
         }
-        val name = Identifier(currentToken.tokenType, currentToken.literal)
+
+        statement.name = Identifier(currentToken.tokenType, currentToken.literal)
+
         if (!expectPeek(TokenType.ASSIGN)) {
             return null
         }
 
-        // TODO: We're skipping the expressions until we encounter a semicolon
-        while (!currentTokenIs(TokenType.SEMICOLON)) {
+        nextToken()
+
+        statement.value = parseExpression(Precedence.LOWEST)
+
+        if (peekTokenIs(TokenType.SEMICOLON)) {
             nextToken()
         }
-        return LetStatement(currentTokenType, name, null)
+
+        return statement
     }
 
     private fun parseReturnStatement(): Statement {
-        // TODO: Add proper expression asd return value
-        val statement: Statement = ReturnStatement(currentToken.tokenType, null)
+
+        val statement = ReturnStatement(currentToken.tokenType, null)
         nextToken()
-        while (!currentTokenIs(TokenType.SEMICOLON)) {
+        statement.returnValue = parseExpression(Precedence.LOWEST)
+
+        if (peekTokenIs(TokenType.SEMICOLON)) {
             nextToken()
         }
+
         return statement
     }
 
