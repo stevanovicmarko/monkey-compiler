@@ -28,6 +28,11 @@ fun eval(node: Node?): ObjectRepr? {
             val right = eval(node.right)
             return evalPrefixExpression(node.operator, right)
         }
+        is InfixExpression -> {
+            val left = eval(node.left)
+            val right = eval(node.right)
+            return evalInfixExpression(node.operator, left, right)
+        }
         else -> null
     }
 }
@@ -54,4 +59,33 @@ fun evalMinusOperatorExpression(right: ObjectRepr?): ObjectRepr {
         return NullRepr()
     }
     return IntegerRepr(-right.value)
+}
+
+
+fun evalInfixExpression(operator: String, left: ObjectRepr?, right: ObjectRepr?): ObjectRepr {
+    return if (left is IntegerRepr && right is IntegerRepr) {
+        evalIntegerInfixExpression(operator, left, right)
+    } else if (operator == "==") {
+        return BooleanRepr(left == right)
+    } else if (operator == "!=") {
+        return BooleanRepr(left != right)
+    } else {
+        return NullRepr()
+    }
+}
+
+fun evalIntegerInfixExpression(operator: String, left: IntegerRepr, right: IntegerRepr): ObjectRepr {
+    val leftValue = left.value
+    val rightValue = right.value
+    return when (operator) {
+        "+" -> IntegerRepr(leftValue + rightValue)
+        "-" -> IntegerRepr(leftValue - rightValue)
+        "*" -> IntegerRepr(leftValue * rightValue)
+        "/" -> IntegerRepr(leftValue / rightValue)
+        "<" -> BooleanRepr(leftValue < rightValue)
+        ">" -> BooleanRepr(leftValue > rightValue)
+        "==" -> BooleanRepr(leftValue == rightValue)
+        "!=" -> BooleanRepr(leftValue != rightValue)
+        else -> NullRepr()
+    }
 }

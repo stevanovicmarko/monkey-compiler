@@ -19,7 +19,7 @@ fun main() {
 //        let y = 5;
 //        let foobar = y;
 //    """.trimIndent()
-    input = "!!!!-5"
+    input = "(1 > 2) == true"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
