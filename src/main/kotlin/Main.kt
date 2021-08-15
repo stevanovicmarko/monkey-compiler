@@ -1,3 +1,4 @@
+import evaluator.eval
 import lexer.Lexer
 
 import parser.Parser
@@ -14,13 +15,15 @@ fun main() {
 //    input = "if (x < y) { x }"
 //    input = "fn(x, y) { x + y; }"
 //    input = "add(1, 2 * 3, 4 + 5);"
-    input = """
-        let y = 5;
-        let foobar = y;
-    """.trimIndent()
+//    input = """
+//        let y = 5;
+//        let foobar = y;
+//    """.trimIndent()
+    input = "!!!!-5"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
     println(program)
     println(parser.errors)
+    println(eval(program))
 }
