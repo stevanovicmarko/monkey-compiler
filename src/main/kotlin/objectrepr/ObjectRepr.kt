@@ -10,6 +10,7 @@ interface ObjectRepr {
 enum class DataNames {
     INTEGER,
     BOOLEAN,
+    RETURN,
     NULL
 }
 
@@ -40,5 +41,15 @@ class NullRepr(): ObjectRepr {
 
     override fun inspect(): String {
         return "null"
+    }
+}
+
+class ReturnRepr(val value: ObjectRepr?): ObjectRepr {
+    override fun objectType(): ObjectType {
+        return DataNames.RETURN.toString()
+    }
+
+    override fun inspect(): String {
+        return "return value"
     }
 }

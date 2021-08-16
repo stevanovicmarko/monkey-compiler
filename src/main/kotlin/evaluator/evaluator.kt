@@ -1,27 +1,21 @@
 package evaluator
 
-import objectrepr.BooleanRepr
-import objectrepr.IntegerRepr
-import objectrepr.NullRepr
-import objectrepr.ObjectRepr
+import objectrepr.*
 import parser.Program
 import parser.ast.*
 
-fun evalStatements(statements: List<Statement>): ObjectRepr? {
-    var result: ObjectRepr? = null
-
-    for(statement in statements) {
-        result = eval(statement)
-    }
-    return result
-}
-
 fun eval(node: Node?): ObjectRepr? {
-    return when (node){
+    return when (node) {
         // Statements
-        is Program -> evalStatements(node.statements)
+        is Program -> evalProgram(node)
+        is BlockStatement -> evalBlockStatement(node)
+        is ReturnStatement -> {
+            val value = eval(node.returnValue)
+            return ReturnRepr(value)
+        }
         is ExpressionStatement -> eval(node.expression)
         // Expressions
+        is IfExpression -> evalIfExpression(node)
         is IntegerLiteral -> IntegerRepr(node.value)
         is BooleanLiteral -> BooleanRepr(node.value)
         is PrefixExpression -> {
@@ -37,8 +31,31 @@ fun eval(node: Node?): ObjectRepr? {
     }
 }
 
-fun evalPrefixExpression(operator: String, right: ObjectRepr?): ObjectRepr {
+fun evalProgram(program: Program): ObjectRepr? {
+    var result: ObjectRepr? = null
 
+    for (statement in program.statements) {
+        result = eval(statement)
+        if (result is ReturnRepr) {
+            return result.value
+        }
+    }
+    return result
+}
+
+fun evalBlockStatement(block: BlockStatement): ObjectRepr? {
+    var result: ObjectRepr? = null
+
+    for (statement in block.statements) {
+        result = eval(statement)
+        if (result is ReturnRepr) {
+            return result
+        }
+    }
+    return result
+}
+
+fun evalPrefixExpression(operator: String, right: ObjectRepr?): ObjectRepr {
     return when (operator) {
         "!" -> evalBangOperatorExpression(right)
         "-" -> evalMinusOperatorExpression(right)
@@ -87,5 +104,25 @@ fun evalIntegerInfixExpression(operator: String, left: IntegerRepr, right: Integ
         "==" -> BooleanRepr(leftValue == rightValue)
         "!=" -> BooleanRepr(leftValue != rightValue)
         else -> NullRepr()
+    }
+}
+
+fun evalIfExpression(ifExpression: IfExpression): ObjectRepr? {
+    val condition = eval(ifExpression.condition)
+    return if (isTruthy(condition)) {
+        eval(ifExpression.consequence)
+    } else if (ifExpression.alternative != null) {
+        eval(ifExpression.alternative)
+    } else {
+        NullRepr()
+    }
+
+}
+
+fun isTruthy(objectRepr: ObjectRepr?): Boolean {
+    return when (objectRepr) {
+        is NullRepr -> false
+        is BooleanRepr -> objectRepr.value
+        else -> true
     }
 }
