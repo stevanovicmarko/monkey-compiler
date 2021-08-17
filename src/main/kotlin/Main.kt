@@ -27,7 +27,14 @@ fun main() {
 //            return 1;
 //        }
 //    """.trimIndent()
-    input = "9; return 2 * 5; 9;".trimIndent()
+    input = """
+        if (10 > 1) {
+            if (10 > 1) {
+                return true + false;
+            }
+            return 1;
+        }
+    """.trimIndent()
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()

@@ -11,7 +11,8 @@ enum class DataNames {
     INTEGER,
     BOOLEAN,
     RETURN,
-    NULL
+    NULL,
+    ERROR
 }
 
 data class IntegerRepr(val value: Int): ObjectRepr {
@@ -44,7 +45,7 @@ class NullRepr(): ObjectRepr {
     }
 }
 
-class ReturnRepr(val value: ObjectRepr?): ObjectRepr {
+data class ReturnRepr(val value: ObjectRepr?): ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.RETURN.toString()
     }
@@ -52,4 +53,15 @@ class ReturnRepr(val value: ObjectRepr?): ObjectRepr {
     override fun inspect(): String {
         return "return value"
     }
+}
+
+data class ErrorRepr(val message: String): ObjectRepr {
+    override fun objectType(): ObjectType {
+        return DataNames.ERROR.toString()
+    }
+
+    override fun inspect(): String {
+        return "ERROR: $message"
+    }
+
 }
