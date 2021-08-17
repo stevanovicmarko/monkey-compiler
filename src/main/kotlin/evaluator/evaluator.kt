@@ -21,12 +21,17 @@ fun eval(node: Node?): ObjectRepr? {
         }
         is ExpressionStatement -> eval(node.expression)
         is LetStatement -> {
-            val value = eval(node.value)
-            if (value is ErrorRepr) {
-                return value
+            val expressionValue = eval(node.value)
+            if (expressionValue is ErrorRepr) {
+                return expressionValue
             }
-            // TODO: Fix node.value.toString() method
-            environment.set(node.value.toString(), value)
+            // TODO: Get rid of this ugly check, because of Identifier? nullability
+            val name = node.name
+            if (name != null) {
+                environment.set(name.value, expressionValue)
+            } else {
+                ErrorRepr("This node has no name: $node")
+            }
         }
         // Expressions
         is IfExpression -> evalIfExpression(node)

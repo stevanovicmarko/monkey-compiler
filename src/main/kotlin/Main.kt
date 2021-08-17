@@ -29,7 +29,9 @@ fun main() {
 //    """.trimIndent()
     input = """
         let a = 5;
-        a;
+        let b = a > 3;
+        let c = a * 99;
+        let d = if (c > a) { 99 } else { 100 };
     """.trimIndent()
     val lexer = Lexer(input)
     val parser = Parser(lexer)
