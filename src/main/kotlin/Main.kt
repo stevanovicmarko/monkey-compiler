@@ -27,11 +27,14 @@ fun main() {
 //            return 1;
 //        }
 //    """.trimIndent()
+//    input = """
+//        let a = 5;
+//        let b = a > 3;
+//        let c = a * 99;
+//        let d = if (c > a) { 99 } else { 100 };
+//    """.trimIndent()
     input = """
-        let a = 5;
-        let b = a > 3;
-        let c = a * 99;
-        let d = if (c > a) { 99 } else { 100 };
+        fn(x) { x + 2; };
     """.trimIndent()
     val lexer = Lexer(input)
     val parser = Parser(lexer)

@@ -56,6 +56,22 @@ fun eval(node: Node?): ObjectRepr? {
             return evalInfixExpression(node.operator, left, right)
         }
         is Identifier -> evalIdentifier(node)
+        is FunctionLiteral -> {
+            val params = node.parameters
+            val body = node.body
+            return FunctionRepr(params, body, environment)
+        }
+        is CallExpression -> {
+            val function = eval(node.function)
+            if (function is ErrorRepr || node.arguments == null) {
+                return function
+            }
+            val args = evalExpressions(node.arguments, environment)
+            if (args.size == 1 && args.first() is ErrorRepr) {
+                return args.first()
+            }
+            return function
+        }
         else -> null
     }
 }
@@ -166,4 +182,17 @@ fun isTruthy(objectRepr: ObjectRepr?): Boolean {
 
 fun evalIdentifier(node: Identifier): ObjectRepr {
     return environment.get(node.value) ?: ErrorRepr("identifier not found: ${node.value}")
+}
+
+fun evalExpressions(expressions: MutableList<Expression?>, environment: Environment): List<ObjectRepr?> {
+    val result = mutableListOf<ObjectRepr?>()
+
+    for (expression in expressions) {
+        val evaluated = eval(expression)
+        if (evaluated is ErrorRepr) {
+            return mutableListOf(evaluated)
+        }
+        result.add(evaluated)
+    }
+    return result
 }

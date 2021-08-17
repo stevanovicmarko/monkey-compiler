@@ -1,5 +1,8 @@
 package objectrepr
 
+import parser.ast.BlockStatement
+import parser.ast.Identifier
+
 typealias ObjectType = String
 
 interface ObjectRepr {
@@ -12,10 +15,11 @@ enum class DataNames {
     BOOLEAN,
     RETURN,
     NULL,
+    FUNCTION,
     ERROR
 }
 
-data class IntegerRepr(val value: Int): ObjectRepr {
+data class IntegerRepr(val value: Int) : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.INTEGER.toString()
     }
@@ -25,7 +29,7 @@ data class IntegerRepr(val value: Int): ObjectRepr {
     }
 }
 
-data class BooleanRepr(val value: Boolean): ObjectRepr {
+data class BooleanRepr(val value: Boolean) : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.BOOLEAN.toString()
     }
@@ -35,7 +39,7 @@ data class BooleanRepr(val value: Boolean): ObjectRepr {
     }
 }
 
-class NullRepr(): ObjectRepr {
+class NullRepr() : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.NULL.toString()
     }
@@ -45,7 +49,7 @@ class NullRepr(): ObjectRepr {
     }
 }
 
-data class ReturnRepr(val value: ObjectRepr?): ObjectRepr {
+data class ReturnRepr(val value: ObjectRepr?) : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.RETURN.toString()
     }
@@ -55,13 +59,27 @@ data class ReturnRepr(val value: ObjectRepr?): ObjectRepr {
     }
 }
 
-data class ErrorRepr(val message: String): ObjectRepr {
+data class ErrorRepr(val message: String) : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.ERROR.toString()
     }
 
     override fun inspect(): String {
         return "ERROR: $message"
+    }
+}
+
+data class FunctionRepr(
+    val parameters: MutableList<Identifier>?,
+    val body: BlockStatement?,
+    val environment: Environment
+) : ObjectRepr {
+    override fun objectType(): ObjectType {
+        return DataNames.FUNCTION.toString()
+    }
+
+    override fun inspect(): String {
+        return "fn( ${parameters?.joinToString(", ")} ){\n $body \n}"
     }
 
 }
