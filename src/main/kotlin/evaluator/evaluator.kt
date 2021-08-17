@@ -4,6 +4,9 @@ import objectrepr.*
 import parser.Program
 import parser.ast.*
 
+// TODO: Remove this global variable
+val  environment: Environment = Environment(mutableMapOf())
+
 fun eval(node: Node?): ObjectRepr? {
     return when (node) {
         // Statements
@@ -17,6 +20,14 @@ fun eval(node: Node?): ObjectRepr? {
             return ReturnRepr(value)
         }
         is ExpressionStatement -> eval(node.expression)
+        is LetStatement -> {
+            val value = eval(node.value)
+            if (value is ErrorRepr) {
+                return value
+            }
+            // TODO: Fix node.value.toString() method
+            environment.set(node.value.toString(), value)
+        }
         // Expressions
         is IfExpression -> evalIfExpression(node)
         is IntegerLiteral -> IntegerRepr(node.value)
@@ -39,6 +50,7 @@ fun eval(node: Node?): ObjectRepr? {
             }
             return evalInfixExpression(node.operator, left, right)
         }
+        is Identifier -> evalIdentifier(node)
         else -> null
     }
 }
@@ -145,4 +157,8 @@ fun isTruthy(objectRepr: ObjectRepr?): Boolean {
         is BooleanRepr -> objectRepr.value
         else -> true
     }
+}
+
+fun evalIdentifier(node: Identifier): ObjectRepr {
+    return environment.get(node.value) ?: ErrorRepr("identifier not found: ${node.value}")
 }

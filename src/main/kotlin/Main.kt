@@ -28,12 +28,8 @@ fun main() {
 //        }
 //    """.trimIndent()
     input = """
-        if (10 > 1) {
-            if (10 > 1) {
-                return true + false;
-            }
-            return 1;
-        }
+        let a = 5;
+        a;
     """.trimIndent()
     val lexer = Lexer(input)
     val parser = Parser(lexer)
