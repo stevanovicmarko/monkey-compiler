@@ -1,8 +1,12 @@
 package objectrepr
 
-data class Environment(val store: MutableMap<String, ObjectRepr?>) {
+class Environment(private val store: MutableMap<String, ObjectRepr?>, private val outer: Environment?) {
     fun get(name: String): ObjectRepr? {
-        return store[name]
+        val value = store[name]
+        if (value == null && outer != null) {
+            return outer.get(name)
+        }
+        return value
     }
     fun set(name: String, value: ObjectRepr?): ObjectRepr? {
         store[name] = value

@@ -1,7 +1,8 @@
 package lexer
 
-class Lexer(private val input: String) {
+class Lexer(inputString: String) {
     var lexPosition: Int = 0
+    private val input = inputString.trim()
     private var currentCharacter: Char = input.first()
     private val tokens: MutableList<Token> = mutableListOf()
     private val keywordsMap: Map<String, TokenType> = mapOf(

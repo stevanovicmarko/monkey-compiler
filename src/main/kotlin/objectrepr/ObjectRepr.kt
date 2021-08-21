@@ -72,7 +72,7 @@ data class ErrorRepr(val message: String) : ObjectRepr {
 data class FunctionRepr(
     val parameters: MutableList<Identifier>?,
     val body: BlockStatement?,
-    val environment: Environment
+    val environment: Environment?
 ) : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.FUNCTION.toString()

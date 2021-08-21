@@ -4,24 +4,22 @@ import objectrepr.*
 import parser.Program
 import parser.ast.*
 
-// TODO: Remove this global variable
-val  environment: Environment = Environment(mutableMapOf())
 
-fun eval(node: Node?): ObjectRepr? {
+fun eval(node: Node?, environment: Environment): ObjectRepr? {
     return when (node) {
         // Statements
-        is Program -> evalProgram(node)
-        is BlockStatement -> evalBlockStatement(node)
+        is Program -> evalProgram(node, environment)
+        is BlockStatement -> evalBlockStatement(node, environment)
         is ReturnStatement -> {
-            val value = eval(node.returnValue)
+            val value = eval(node.returnValue, environment)
             if (value is ErrorRepr) {
                 return value
             }
             return ReturnRepr(value)
         }
-        is ExpressionStatement -> eval(node.expression)
+        is ExpressionStatement -> eval(node.expression, environment)
         is LetStatement -> {
-            val expressionValue = eval(node.value)
+            val expressionValue = eval(node.value, environment)
             if (expressionValue is ErrorRepr) {
                 return expressionValue
             }
@@ -34,53 +32,56 @@ fun eval(node: Node?): ObjectRepr? {
             }
         }
         // Expressions
-        is IfExpression -> evalIfExpression(node)
+        is IfExpression -> evalIfExpression(node, environment)
         is IntegerLiteral -> IntegerRepr(node.value)
         is BooleanLiteral -> BooleanRepr(node.value)
         is PrefixExpression -> {
-            val right = eval(node.right)
+            val right = eval(node.right, environment)
             if (right is ErrorRepr) {
                 return right
             }
             return evalPrefixExpression(node.operator, right)
         }
         is InfixExpression -> {
-            val left = eval(node.left)
+            val left = eval(node.left, environment)
             if (left is ErrorRepr) {
                 return left
             }
-            val right = eval(node.right)
+            val right = eval(node.right, environment)
             if (right is ErrorRepr) {
                 return right
             }
             return evalInfixExpression(node.operator, left, right)
         }
-        is Identifier -> evalIdentifier(node)
+        is Identifier -> evalIdentifier(node, environment)
         is FunctionLiteral -> {
             val params = node.parameters
             val body = node.body
             return FunctionRepr(params, body, environment)
         }
         is CallExpression -> {
-            val function = eval(node.function)
+            val function = eval(node.function, environment)
             if (function is ErrorRepr || node.arguments == null) {
-                return function
+                return ErrorRepr("not a function")
             }
             val args = evalExpressions(node.arguments, environment)
             if (args.size == 1 && args.first() is ErrorRepr) {
                 return args.first()
             }
-            return function
+            if (function is FunctionRepr) {
+                return applyFunction(function, args)
+            }
+            return ErrorRepr("not a function")
         }
         else -> null
     }
 }
 
-fun evalProgram(program: Program): ObjectRepr? {
+fun evalProgram(program: Program, environment: Environment): ObjectRepr? {
     var result: ObjectRepr? = null
 
     for (statement in program.statements) {
-        result = eval(statement)
+        result = eval(statement, environment)
         if (result is ReturnRepr) {
             return result.value
         }
@@ -91,11 +92,11 @@ fun evalProgram(program: Program): ObjectRepr? {
     return result
 }
 
-fun evalBlockStatement(block: BlockStatement): ObjectRepr? {
+fun evalBlockStatement(block: BlockStatement, environment: Environment): ObjectRepr? {
     var result: ObjectRepr? = null
 
     for (statement in block.statements) {
-        result = eval(statement)
+        result = eval(statement, environment)
         if (result is ReturnRepr || result is ErrorRepr) {
             return result
         }
@@ -157,15 +158,15 @@ fun evalIntegerInfixExpression(operator: String, left: IntegerRepr, right: Integ
     }
 }
 
-fun evalIfExpression(ifExpression: IfExpression): ObjectRepr? {
-    val condition = eval(ifExpression.condition)
+fun evalIfExpression(ifExpression: IfExpression, environment: Environment): ObjectRepr? {
+    val condition = eval(ifExpression.condition, environment)
     if (condition is ErrorRepr) {
         return condition
     }
     return if (isTruthy(condition)) {
-        eval(ifExpression.consequence)
+        eval(ifExpression.consequence, environment)
     } else if (ifExpression.alternative != null) {
-        eval(ifExpression.alternative)
+        eval(ifExpression.alternative, environment)
     } else {
         NullRepr()
     }
@@ -180,7 +181,7 @@ fun isTruthy(objectRepr: ObjectRepr?): Boolean {
     }
 }
 
-fun evalIdentifier(node: Identifier): ObjectRepr {
+fun evalIdentifier(node: Identifier, environment: Environment): ObjectRepr {
     return environment.get(node.value) ?: ErrorRepr("identifier not found: ${node.value}")
 }
 
@@ -188,11 +189,29 @@ fun evalExpressions(expressions: MutableList<Expression?>, environment: Environm
     val result = mutableListOf<ObjectRepr?>()
 
     for (expression in expressions) {
-        val evaluated = eval(expression)
+        val evaluated = eval(expression, environment)
         if (evaluated is ErrorRepr) {
             return mutableListOf(evaluated)
         }
         result.add(evaluated)
     }
     return result
+}
+
+fun applyFunction(functionRepr: FunctionRepr, args: List<ObjectRepr?>): ObjectRepr? {
+    val extendedEnvironment = Environment(mutableMapOf(), functionRepr.environment )
+    val ( parameters ) = functionRepr
+
+    if (parameters != null) {
+        for ((index, param) in parameters.withIndex()) {
+            extendedEnvironment.set(param.value, args[index])
+        }
+    }
+
+    val evaluated = eval(functionRepr.body, extendedEnvironment)
+
+    if (evaluated is ReturnRepr) {
+        return evaluated.value
+    }
+    return evaluated
 }
