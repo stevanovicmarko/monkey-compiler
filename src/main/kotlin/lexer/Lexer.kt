@@ -1,7 +1,7 @@
 package lexer
 
 class Lexer(inputString: String) {
-    var lexPosition: Int = 0
+    private var lexPosition: Int = 0
     private val input = inputString.trim()
     private var currentCharacter: Char = input.first()
     private val tokens: MutableList<Token> = mutableListOf()
@@ -46,6 +46,11 @@ class Lexer(inputString: String) {
         tokens.add(Token(TokenType.INT, input.substring(digitStartPosition, lexPosition)))
     }
 
+    private fun handleSingleToken(token: Token) {
+        tokens.add(token)
+        lexPosition++
+    }
+
     fun nextToken(): Token {
         if (lexPosition == input.length) {
             tokens.add(Token(TokenType.EOF, ""))
@@ -73,52 +78,40 @@ class Lexer(inputString: String) {
                 lexPosition++
             }
             '+' -> {
-                tokens.add(Token(TokenType.PLUS, "+"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.PLUS, "+"))
             }
             '-' -> {
-                tokens.add(Token(TokenType.MINUS, "-"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.MINUS, "-"))
             }
             ',' -> {
-                tokens.add(Token(TokenType.COMMA, ","))
-                lexPosition++
+                handleSingleToken(Token(TokenType.COMMA, ","))
             }
             ';' -> {
-                tokens.add(Token(TokenType.SEMICOLON, ";"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.SEMICOLON, ";"))
             }
             '(' -> {
-                tokens.add(Token(TokenType.LPAREN, "("))
-                lexPosition++
+                handleSingleToken(Token(TokenType.LPAREN, "("))
             }
             ')' -> {
-                tokens.add(Token(TokenType.RPAREN, ")"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.RPAREN, ")"))
             }
             '{' -> {
-                tokens.add(Token(TokenType.LBRACE, "{"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.LBRACE, "{"))
             }
             '}' -> {
-                tokens.add(Token(TokenType.RBRACE, "}"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.RBRACE, "}"))
             }
             '*' -> {
-                tokens.add(Token(TokenType.ASTERISK, "*"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.ASTERISK, "*"))
             }
             '/' -> {
-                tokens.add(Token(TokenType.SLASH, "/"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.SLASH, "/"))
             }
             '<' -> {
-                tokens.add(Token(TokenType.LT, "<"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.LT, "<"))
             }
             '>' -> {
-                tokens.add(Token(TokenType.GT, ">"))
-                lexPosition++
+                handleSingleToken(Token(TokenType.GT, ">"))
             }
             '\n' -> lexPosition++
             else -> {
