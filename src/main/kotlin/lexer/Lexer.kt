@@ -46,6 +46,16 @@ class Lexer(inputString: String) {
         tokens.add(Token(TokenType.INT, input.substring(digitStartPosition, lexPosition)))
     }
 
+    private fun readString() {
+        lexPosition++
+        val stringStartPosition = lexPosition
+        while (lexPosition < input.length && input.substring(lexPosition).first() != '"') {
+            lexPosition++
+        }
+        tokens.add(Token(TokenType.STRING, input.substring(stringStartPosition, lexPosition)))
+        lexPosition++
+    }
+
     private fun handleSingleToken(token: Token) {
         tokens.add(token)
         lexPosition++
@@ -112,6 +122,9 @@ class Lexer(inputString: String) {
             }
             '>' -> {
                 handleSingleToken(Token(TokenType.GT, ">"))
+            }
+            '"' -> {
+                readString()
             }
             '\n' -> lexPosition++
             else -> {
