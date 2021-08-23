@@ -63,16 +63,13 @@ fun eval(node: Node?, environment: Environment): ObjectRepr? {
         is CallExpression -> {
             val function = eval(node.function, environment)
             if (function is ErrorRepr || node.arguments == null) {
-                return ErrorRepr("not a function")
+                return ErrorRepr("not a function: $node")
             }
             val args = evalExpressions(node.arguments, environment)
             if (args.size == 1 && args.first() is ErrorRepr) {
                 return args.first()
             }
-            if (function is FunctionRepr) {
-                return applyFunction(function, args)
-            }
-            return ErrorRepr("not a function")
+            return applyFunction(function, args)
         }
         else -> null
     }
@@ -191,7 +188,18 @@ fun isTruthy(objectRepr: ObjectRepr?): Boolean {
 }
 
 fun evalIdentifier(node: Identifier, environment: Environment): ObjectRepr {
-    return environment.get(node.value) ?: ErrorRepr("identifier not found: ${node.value}")
+    val identifier = environment.get(node.value)
+
+    if (identifier != null) {
+        return identifier
+    }
+
+    val builtinFunction = builtinFunctions[node.value]
+    if (builtinFunction != null) {
+        return builtinFunction
+    }
+
+    return ErrorRepr("identifier not found: ${node.value}")
 }
 
 fun evalExpressions(expressions: MutableList<Expression?>, environment: Environment): List<ObjectRepr?> {
@@ -207,20 +215,27 @@ fun evalExpressions(expressions: MutableList<Expression?>, environment: Environm
     return result
 }
 
-fun applyFunction(functionRepr: FunctionRepr, args: List<ObjectRepr?>): ObjectRepr? {
-    val extendedEnvironment = Environment(mutableMapOf(), functionRepr.environment )
-    val ( parameters ) = functionRepr
+fun applyFunction(objectRepr: ObjectRepr?, args: List<ObjectRepr?>): ObjectRepr? {
+    return when(objectRepr) {
+        is FunctionRepr -> {
+            val extendedEnvironment = Environment(mutableMapOf(), objectRepr.environment )
+            val ( parameters ) = objectRepr
 
-    if (parameters != null) {
-        for ((index, param) in parameters.withIndex()) {
-            extendedEnvironment.set(param.value, args[index])
+            if (parameters != null) {
+                for ((index, param) in parameters.withIndex()) {
+                    extendedEnvironment.set(param.value, args[index])
+                }
+            }
+
+            val evaluated = eval(objectRepr.body, extendedEnvironment)
+
+            if (evaluated is ReturnRepr) {
+                return evaluated.value
+            }
+            return evaluated
         }
+        is BuiltinRepr -> objectRepr.fn(*args.toTypedArray())
+        else -> ErrorRepr("Passed object is not a function representation: $objectRepr")
     }
 
-    val evaluated = eval(functionRepr.body, extendedEnvironment)
-
-    if (evaluated is ReturnRepr) {
-        return evaluated.value
-    }
-    return evaluated
 }

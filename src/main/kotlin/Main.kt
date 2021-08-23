@@ -6,12 +6,7 @@ import parser.Parser
 
 fun main() {
     val input = """
-        let newAdder = fn(x) {
-           fn(y) { x + y };
-        };
-        let addTwo = newAdder(2);
-        addTwo(12);
-        let giveMeHello = fn(word) { "Hello " + word }
+        let giveMeHello = fn(word) { len(word) + 11 }
         giveMeHello("world!");
         """
     val lexer = Lexer(input)

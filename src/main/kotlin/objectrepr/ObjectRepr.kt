@@ -16,6 +16,7 @@ enum class DataNames {
     RETURN,
     NULL,
     FUNCTION,
+    BUILTIN,
     STRING,
     ERROR
 }
@@ -40,7 +41,7 @@ data class BooleanRepr(val value: Boolean) : ObjectRepr {
     }
 }
 
-class NullRepr() : ObjectRepr {
+class NullRepr : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.NULL.toString()
     }
@@ -93,3 +94,28 @@ data class StringRepr(val value: String) : ObjectRepr {
         return value
     }
 }
+
+data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr) : ObjectRepr {
+    override fun objectType(): ObjectType {
+        return DataNames.BUILTIN.toString()
+    }
+
+    override fun inspect(): String {
+        return "builtin function"
+    }
+}
+
+fun len(vararg input: ObjectRepr?): ObjectRepr {
+    if (input.size != 1) {
+        return ErrorRepr("wrong number of arguments. got ${input.size}, want=1")
+    }
+    val param = input[0]
+    if (param is StringRepr) {
+        return IntegerRepr(param.value.length)
+    }
+    return ErrorRepr("argument type ${param?.objectType()} for 'len' function is not supported")
+}
+
+val builtinFunctions: Map<String, BuiltinRepr> = mapOf(
+    "len" to BuiltinRepr { args -> len(*args) }
+)
