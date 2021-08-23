@@ -34,6 +34,7 @@ fun eval(node: Node?, environment: Environment): ObjectRepr? {
         // Expressions
         is IfExpression -> evalIfExpression(node, environment)
         is IntegerLiteral -> IntegerRepr(node.value)
+        is StringLiteral -> StringRepr(node.value)
         is BooleanLiteral -> BooleanRepr(node.value)
         is PrefixExpression -> {
             val right = eval(node.right, environment)
@@ -127,7 +128,6 @@ fun evalMinusOperatorExpression(right: ObjectRepr?): ObjectRepr {
     return IntegerRepr(-right.value)
 }
 
-
 fun evalInfixExpression(operator: String, left: ObjectRepr?, right: ObjectRepr?): ObjectRepr {
     return if (left != null && right != null && left::class != right::class) {
         ErrorRepr("type mismatch: $left, $operator, $right")
@@ -137,9 +137,18 @@ fun evalInfixExpression(operator: String, left: ObjectRepr?, right: ObjectRepr?)
         BooleanRepr(left == right)
     } else if (operator == "!=") {
         BooleanRepr(left != right)
+    } else if(left is StringRepr && right is StringRepr) {
+        evalStringInfixExpression(operator, left, right)
     } else {
         ErrorRepr("unknown operator: $left, $operator, $right")
     }
+}
+
+private fun evalStringInfixExpression(operator: String, left: StringRepr, right: StringRepr): ObjectRepr {
+    if (operator != "+") {
+        return ErrorRepr("unknown operator: $left $operator $right")
+    }
+    return StringRepr(left.value + right.value)
 }
 
 fun evalIntegerInfixExpression(operator: String, left: IntegerRepr, right: IntegerRepr): ObjectRepr {

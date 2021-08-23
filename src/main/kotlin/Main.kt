@@ -11,6 +11,8 @@ fun main() {
         };
         let addTwo = newAdder(2);
         addTwo(12);
+        let giveMeHello = fn(word) { "Hello " + word }
+        giveMeHello("world!");
         """
     val lexer = Lexer(input)
     val parser = Parser(lexer)

@@ -16,6 +16,7 @@ enum class DataNames {
     RETURN,
     NULL,
     FUNCTION,
+    STRING,
     ERROR
 }
 
@@ -81,5 +82,14 @@ data class FunctionRepr(
     override fun inspect(): String {
         return "fn( ${parameters?.joinToString(", ")} ){\n $body \n}"
     }
+}
 
+data class StringRepr(val value: String) : ObjectRepr {
+    override fun objectType(): ObjectType {
+        return DataNames.STRING.toString()
+    }
+
+    override fun inspect(): String {
+        return value
+    }
 }

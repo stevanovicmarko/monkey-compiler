@@ -3,6 +3,9 @@ package parser
 import lexer.Lexer
 import lexer.Token
 import lexer.TokenType
+import objectrepr.ErrorRepr
+import objectrepr.ObjectRepr
+import objectrepr.StringRepr
 import parser.ast.*
 import kotlin.math.exp
 
@@ -47,6 +50,7 @@ class Parser(private val lexer: Lexer) {
         registerPrefix(TokenType.FALSE) { parseBoolean() }
         registerPrefix(TokenType.IF) { parseIfExpression() }
         registerPrefix(TokenType.FUNCTION) { parseFunctionLiteral() }
+        registerPrefix(TokenType.STRING) { parseStringLiteral() }
 
         registerInfix(TokenType.PLUS) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.MINUS) { expression -> parseInfixExpression(expression as Expression) }
@@ -349,6 +353,10 @@ class Parser(private val lexer: Lexer) {
 
     private fun noPrefixParseFunctionError(tokenType: TokenType) {
         errors.add("no prefix parse function for $tokenType found")
+    }
+
+    private fun parseStringLiteral(): Expression {
+        return StringLiteral(currentToken.tokenType, currentToken.literal)
     }
 
     fun parseProgram(): Program {
