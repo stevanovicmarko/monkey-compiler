@@ -18,6 +18,7 @@ enum class DataNames {
     FUNCTION,
     BUILTIN,
     STRING,
+    ARRAY,
     ERROR
 }
 
@@ -93,6 +94,17 @@ data class StringRepr(val value: String) : ObjectRepr {
     override fun inspect(): String {
         return value
     }
+}
+
+data class ArrayRepr(val elements: List<ObjectRepr?>): ObjectRepr {
+    override fun objectType(): ObjectType {
+       return DataNames.ARRAY.toString()
+    }
+
+    override fun inspect(): String {
+        return "[ ${elements.joinToString(", ")} ]"
+    }
+
 }
 
 data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr) : ObjectRepr {

@@ -2,10 +2,8 @@ package parser.ast
 
 import lexer.TokenType
 
-data class ArrayLiteral(val tokenType: TokenType, val elements: List<Expression?>?): Expression {
-    override fun expressionNode() {
-        TODO("Not yet implemented")
-    }
+data class ArrayLiteral(val tokenType: TokenType, val elements: MutableList<Expression?>?): Expression {
+    override fun expressionNode() { }
 
     override fun tokenLiteral(): String {
         return tokenType.toString()

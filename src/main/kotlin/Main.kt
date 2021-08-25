@@ -6,8 +6,8 @@ import parser.Parser
 
 fun main() {
     val input = """
-        let abc = ["hi", 1, 32][1];
-        
+        let a = [1, 2 * 2, 10 - 5, 8 / 2];
+        a[5];
         """
     val lexer = Lexer(input)
     val parser = Parser(lexer)

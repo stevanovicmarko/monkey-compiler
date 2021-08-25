@@ -36,6 +36,16 @@ fun eval(node: Node?, environment: Environment): ObjectRepr? {
         is IntegerLiteral -> IntegerRepr(node.value)
         is StringLiteral -> StringRepr(node.value)
         is BooleanLiteral -> BooleanRepr(node.value)
+        is ArrayLiteral -> {
+            if (node.elements == null) {
+                return ErrorRepr("Missing elements list")
+            }
+            val elements = evalExpressions(node.elements, environment)
+            if (elements.size == 1 && elements[0] is ErrorRepr) {
+                return elements[0]
+            }
+            return ArrayRepr(elements)
+        }
         is PrefixExpression -> {
             val right = eval(node.right, environment)
             if (right is ErrorRepr) {
@@ -70,6 +80,17 @@ fun eval(node: Node?, environment: Environment): ObjectRepr? {
                 return args.first()
             }
             return applyFunction(function, args)
+        }
+        is IndexExpression -> {
+            val left = eval(node.left, environment)
+            if (left is ErrorRepr) {
+                return left
+            }
+            val index = eval(node.index, environment)
+            if (index is ErrorRepr) {
+                return index
+            }
+            return evalIndexExpression(left, index)
         }
         else -> null
     }
@@ -238,4 +259,14 @@ fun applyFunction(objectRepr: ObjectRepr?, args: List<ObjectRepr?>): ObjectRepr?
         else -> ErrorRepr("Passed object is not a function representation: $objectRepr")
     }
 
+}
+
+fun evalIndexExpression(left: ObjectRepr?, index: ObjectRepr?): ObjectRepr? {
+    if (left is ArrayRepr && index is IntegerRepr) {
+        if (index.value < 0 || index.value > left.elements.size - 1) {
+            return ErrorRepr("Index out of bounds")
+        }
+        return left.elements[index.value]
+    }
+    return ErrorRepr("Index operator not supported ${left?.inspect()}")
 }
