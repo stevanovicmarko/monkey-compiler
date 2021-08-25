@@ -18,6 +18,8 @@ enum class TokenType {
     RPAREN,
     LBRACE,
     RBRACE,
+    LBRACKET,
+    RBRACKET,
     BANG,
     ASTERISK,
     SLASH,

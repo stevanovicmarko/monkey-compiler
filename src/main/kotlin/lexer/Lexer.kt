@@ -123,6 +123,12 @@ class Lexer(inputString: String) {
             '>' -> {
                 handleSingleToken(Token(TokenType.GT, ">"))
             }
+            '[' -> {
+                handleSingleToken(Token(TokenType.LBRACKET, "["))
+            }
+            ']' -> {
+                handleSingleToken(Token(TokenType.RBRACKET, "]"))
+            }
             '"' -> {
                 readString()
             }

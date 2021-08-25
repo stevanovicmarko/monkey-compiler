@@ -6,8 +6,8 @@ import parser.Parser
 
 fun main() {
     val input = """
-        let giveMeHello = fn(word) { len(word) + 11 }
-        giveMeHello("world!");
+        let abc = ["hi", 1, 32][1];
+        
         """
     val lexer = Lexer(input)
     val parser = Parser(lexer)

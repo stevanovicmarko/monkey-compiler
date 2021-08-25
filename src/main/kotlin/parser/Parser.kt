@@ -3,9 +3,6 @@ package parser
 import lexer.Lexer
 import lexer.Token
 import lexer.TokenType
-import objectrepr.ErrorRepr
-import objectrepr.ObjectRepr
-import objectrepr.StringRepr
 import parser.ast.*
 import kotlin.math.exp
 
@@ -15,7 +12,7 @@ class Parser(private val lexer: Lexer) {
     private var currentToken: Token = peekToken
     val errors: MutableList<String> = mutableListOf()
     private val prefixParseFunctions: MutableMap<TokenType, () -> Expression?> = mutableMapOf()
-    private val infixParseFunctions: MutableMap<TokenType, (expression: Expression?) -> Expression> = mutableMapOf()
+    private val infixParseFunctions: MutableMap<TokenType, (expression: Expression?) -> Expression?> = mutableMapOf()
 
     enum class Precedence {
         LOWEST,
@@ -24,7 +21,8 @@ class Parser(private val lexer: Lexer) {
         SUM, // +
         PRODUCT, // *
         PREFIX, // -X or !X
-        CALL // myFunction(X)
+        CALL, // myFunction(X)
+        INDEX
     }
 
     private val precedences = mapOf(
@@ -36,7 +34,8 @@ class Parser(private val lexer: Lexer) {
         TokenType.PLUS to Precedence.SUM,
         TokenType.MINUS to Precedence.SUM,
         TokenType.SLASH to Precedence.PRODUCT,
-        TokenType.ASTERISK to Precedence.PRODUCT
+        TokenType.ASTERISK to Precedence.PRODUCT,
+        TokenType.LBRACKET to Precedence.INDEX
     )
 
     init {
@@ -51,6 +50,7 @@ class Parser(private val lexer: Lexer) {
         registerPrefix(TokenType.IF) { parseIfExpression() }
         registerPrefix(TokenType.FUNCTION) { parseFunctionLiteral() }
         registerPrefix(TokenType.STRING) { parseStringLiteral() }
+        registerPrefix(TokenType.LBRACKET) { parseArrayLiteral() }
 
         registerInfix(TokenType.PLUS) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.MINUS) { expression -> parseInfixExpression(expression as Expression) }
@@ -61,6 +61,7 @@ class Parser(private val lexer: Lexer) {
         registerInfix(TokenType.LT) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.GT) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.LPAREN) { expression -> parseCallExpression(expression as Expression) }
+        registerInfix(TokenType.LBRACKET) { expression -> parseIndexExpression(expression as Expression) }
     }
 
     private fun nextToken() {
@@ -80,7 +81,7 @@ class Parser(private val lexer: Lexer) {
         prefixParseFunctions[tokenType] = fn
     }
 
-    private fun registerInfix(tokenType: TokenType, fn: (expression: Expression?) -> Expression) {
+    private fun registerInfix(tokenType: TokenType, fn: (expression: Expression?) -> Expression?) {
         infixParseFunctions[tokenType] = fn
     }
 
@@ -290,32 +291,9 @@ class Parser(private val lexer: Lexer) {
         return identifiers
     }
 
-    private fun parseCallArguments(): MutableList<Expression?>? {
-        val arguments = mutableListOf<Expression?>()
-
-        if (peekTokenIs(TokenType.RPAREN)) {
-            nextToken()
-            return arguments
-        }
-
-        nextToken()
-        arguments.add(parseExpression(Precedence.LOWEST))
-
-        while (peekTokenIs(TokenType.COMMA)) {
-            nextToken()
-            nextToken()
-            arguments.add(parseExpression(Precedence.LOWEST))
-        }
-
-        if (!expectPeek(TokenType.RPAREN)) {
-            return null
-        }
-
-        return arguments
-    }
-
     private fun parseCallExpression(func: Expression): Expression {
-        return CallExpression(currentToken.tokenType, func, parseCallArguments())
+        val arguments = parseExpressionList(TokenType.RPAREN)
+        return CallExpression(currentToken.tokenType, func, arguments)
     }
 
     private fun parseIfExpression(): Expression? {
@@ -357,6 +335,44 @@ class Parser(private val lexer: Lexer) {
 
     private fun parseStringLiteral(): Expression {
         return StringLiteral(currentToken.tokenType, currentToken.literal)
+    }
+
+    private fun parseExpressionList(end: TokenType): MutableList<Expression?>? {
+        val list = mutableListOf<Expression?>()
+
+        if (peekTokenIs(end)) {
+            nextToken()
+            return list
+        }
+
+        nextToken()
+        list.add(parseExpression(Precedence.LOWEST))
+
+        while (peekTokenIs(TokenType.COMMA)) {
+            nextToken()
+            nextToken()
+            list.add(parseExpression(Precedence.LOWEST))
+        }
+
+        if (!expectPeek(end)) {
+            return null
+        }
+        return list
+    }
+
+    private fun parseArrayLiteral(): Expression {
+        val elements = parseExpressionList(TokenType.RBRACKET)
+        return ArrayLiteral(currentToken.tokenType, elements)
+    }
+
+    private fun parseIndexExpression(left: Expression ): Expression? {
+        val indexExpression = IndexExpression(currentToken.tokenType, left, null)
+        nextToken()
+        indexExpression.index = parseExpression(Precedence.LOWEST)
+        if (!expectPeek(TokenType.RBRACKET)) {
+            return null
+        }
+        return indexExpression
     }
 
     fun parseProgram(): Program {
