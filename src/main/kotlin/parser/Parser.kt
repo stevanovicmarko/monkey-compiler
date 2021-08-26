@@ -4,7 +4,6 @@ import lexer.Lexer
 import lexer.Token
 import lexer.TokenType
 import parser.ast.*
-import kotlin.math.exp
 
 
 class Parser(private val lexer: Lexer) {
@@ -216,7 +215,7 @@ class Parser(private val lexer: Lexer) {
             return null
         }
 
-        return  expression
+        return expression
     }
 
     private fun parseIntegerLiteral(): Expression? {
@@ -238,7 +237,7 @@ class Parser(private val lexer: Lexer) {
         val block = BlockStatement(currentToken.tokenType, mutableListOf())
         nextToken()
 
-        while(!currentTokenIs(TokenType.RBRACE) && !currentTokenIs(TokenType.EOF)) {
+        while (!currentTokenIs(TokenType.RBRACE) && !currentTokenIs(TokenType.EOF)) {
             val statement = parseStatement()
             if (statement != null) {
                 block.statements.add(statement)
@@ -278,10 +277,10 @@ class Parser(private val lexer: Lexer) {
         identifiers.add(identifier)
 
         while (peekTokenIs(TokenType.COMMA)) {
-              nextToken()
-              nextToken()
-              identifier = Identifier(currentToken.tokenType, currentToken.literal)
-              identifiers.add(identifier)
+            nextToken()
+            nextToken()
+            identifier = Identifier(currentToken.tokenType, currentToken.literal)
+            identifiers.add(identifier)
         }
 
         if (!expectPeek(TokenType.RPAREN)) {
@@ -317,7 +316,7 @@ class Parser(private val lexer: Lexer) {
 
         expression.consequence = parseBlockStatement()
 
-        if(peekTokenIs(TokenType.ELSE)) {
+        if (peekTokenIs(TokenType.ELSE)) {
             nextToken()
             if (!expectPeek(TokenType.LBRACE)) {
                 return null
@@ -365,7 +364,7 @@ class Parser(private val lexer: Lexer) {
         return ArrayLiteral(currentToken.tokenType, elements)
     }
 
-    private fun parseIndexExpression(left: Expression ): Expression? {
+    private fun parseIndexExpression(left: Expression): Expression? {
         val indexExpression = IndexExpression(currentToken.tokenType, left, null)
         nextToken()
         indexExpression.index = parseExpression(Precedence.LOWEST)

@@ -56,8 +56,8 @@ class Lexer(inputString: String) {
         lexPosition++
     }
 
-    private fun handleSingleToken(token: Token) {
-        tokens.add(token)
+    private fun handleSingleToken(tokenType: TokenType) {
+        tokens.add(Token(tokenType, currentCharacter.toString()))
         lexPosition++
     }
 
@@ -88,46 +88,46 @@ class Lexer(inputString: String) {
                 lexPosition++
             }
             '+' -> {
-                handleSingleToken(Token(TokenType.PLUS, "+"))
+                handleSingleToken(TokenType.PLUS)
             }
             '-' -> {
-                handleSingleToken(Token(TokenType.MINUS, "-"))
+                handleSingleToken(TokenType.MINUS)
             }
             ',' -> {
-                handleSingleToken(Token(TokenType.COMMA, ","))
+                handleSingleToken(TokenType.COMMA)
             }
             ';' -> {
-                handleSingleToken(Token(TokenType.SEMICOLON, ";"))
+                handleSingleToken(TokenType.SEMICOLON)
             }
             '(' -> {
-                handleSingleToken(Token(TokenType.LPAREN, "("))
+                handleSingleToken(TokenType.LPAREN)
             }
             ')' -> {
-                handleSingleToken(Token(TokenType.RPAREN, ")"))
+                handleSingleToken(TokenType.RPAREN)
             }
             '{' -> {
-                handleSingleToken(Token(TokenType.LBRACE, "{"))
+                handleSingleToken(TokenType.LBRACE)
             }
             '}' -> {
-                handleSingleToken(Token(TokenType.RBRACE, "}"))
+                handleSingleToken(TokenType.RBRACE)
             }
             '*' -> {
-                handleSingleToken(Token(TokenType.ASTERISK, "*"))
+                handleSingleToken(TokenType.ASTERISK)
             }
             '/' -> {
-                handleSingleToken(Token(TokenType.SLASH, "/"))
+                handleSingleToken(TokenType.SLASH)
             }
             '<' -> {
-                handleSingleToken(Token(TokenType.LT, "<"))
+                handleSingleToken(TokenType.LT)
             }
             '>' -> {
-                handleSingleToken(Token(TokenType.GT, ">"))
+                handleSingleToken(TokenType.GT)
             }
             '[' -> {
-                handleSingleToken(Token(TokenType.LBRACKET, "["))
+                handleSingleToken(TokenType.LBRACKET)
             }
             ']' -> {
-                handleSingleToken(Token(TokenType.RBRACKET, "]"))
+                handleSingleToken(TokenType.RBRACKET)
             }
             '"' -> {
                 readString()

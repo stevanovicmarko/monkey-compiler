@@ -1,7 +1,7 @@
 package evaluator
 
 import objectrepr.*
-import parser.Program
+import parser.ast.Program
 import parser.ast.*
 
 

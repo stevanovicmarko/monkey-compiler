@@ -1,6 +1,7 @@
 package lexer
 
 enum class TokenType {
+    PROGRAM,
     ILLEGAL,
     EOF,
     // Identifiers + literals

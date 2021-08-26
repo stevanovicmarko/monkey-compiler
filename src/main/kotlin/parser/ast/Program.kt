@@ -1,10 +1,9 @@
-package parser
+package parser.ast
 
-import parser.ast.Node
-import parser.ast.Statement
+import lexer.TokenType
 
 
-class Program(var statements: MutableList<Statement>) : Node {
+class Program(var statements: MutableList<Statement>) : Node(TokenType.PROGRAM) {
     override fun tokenLiteral(): String {
         return if (statements.isNotEmpty()) {
             statements.first().tokenLiteral()

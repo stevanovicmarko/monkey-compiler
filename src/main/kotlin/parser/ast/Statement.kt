@@ -1,6 +1,5 @@
 package parser.ast
 
-interface Statement: Node {
+import lexer.TokenType
 
-    fun statementNode()
-}
+sealed class Statement(tokenType: TokenType) : Node(tokenType)

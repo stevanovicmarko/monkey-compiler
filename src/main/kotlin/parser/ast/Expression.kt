@@ -1,5 +1,5 @@
 package parser.ast
 
-interface Expression: Node {
-    fun expressionNode()
-}
+import lexer.TokenType
+
+sealed class Expression(tokenType: TokenType): Node(tokenType)
