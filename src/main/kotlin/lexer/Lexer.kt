@@ -129,6 +129,9 @@ class Lexer(inputString: String) {
             ']' -> {
                 handleSingleToken(TokenType.RBRACKET)
             }
+            ':' -> {
+                handleSingleToken(TokenType.COLON)
+            }
             '"' -> {
                 readString()
             }

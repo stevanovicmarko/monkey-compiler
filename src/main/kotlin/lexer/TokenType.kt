@@ -28,6 +28,7 @@ enum class TokenType {
     GT,
     EQ,
     NOT_EQ,
+    COLON,
     // KeyWords
     FUNCTION,
     LET,

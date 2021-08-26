@@ -50,6 +50,7 @@ class Parser(private val lexer: Lexer) {
         registerPrefix(TokenType.FUNCTION) { parseFunctionLiteral() }
         registerPrefix(TokenType.STRING) { parseStringLiteral() }
         registerPrefix(TokenType.LBRACKET) { parseArrayLiteral() }
+        registerPrefix(TokenType.LBRACE) { parseHashLiteral() }
 
         registerInfix(TokenType.PLUS) { expression -> parseInfixExpression(expression as Expression) }
         registerInfix(TokenType.MINUS) { expression -> parseInfixExpression(expression as Expression) }
@@ -372,6 +373,33 @@ class Parser(private val lexer: Lexer) {
             return null
         }
         return indexExpression
+    }
+
+    private fun parseHashLiteral(): Expression? {
+        val hash = HashLiteral(currentToken.tokenType, mutableMapOf())
+
+        while (!peekTokenIs(TokenType.RBRACE)) {
+            nextToken()
+            val key = parseExpression(Precedence.LOWEST) ?: return null
+
+            if (!expectPeek(TokenType.COLON)) {
+                return null
+            }
+
+            nextToken()
+            val value = parseExpression(Precedence.LOWEST)
+            hash.pairs[key] = value
+
+            if (!peekTokenIs(TokenType.RBRACE) && !expectPeek(TokenType.COMMA)) {
+                return null
+            }
+        }
+
+        if (!expectPeek(TokenType.RBRACE)) {
+            return null
+        }
+        return hash
+
     }
 
     fun parseProgram(): Program {
