@@ -60,10 +60,16 @@ fun push(vararg input: ObjectRepr?): ObjectRepr {
     }
 }
 
+fun puts(vararg input: ObjectRepr?): ObjectRepr? {
+    println(input.joinToString(", "))
+    return null
+}
+
 val builtinFunctions: Map<String, BuiltinRepr> = mapOf(
     "len" to BuiltinRepr { args -> len(*args) },
     "first" to BuiltinRepr { args -> first(*args) },
     "last" to BuiltinRepr { args -> last(*args) },
     "rest" to BuiltinRepr { args -> rest(*args) },
-    "push" to BuiltinRepr { args -> push(*args) }
+    "push" to BuiltinRepr { args -> push(*args) },
+    "puts" to BuiltinRepr { args -> puts(*args) }
 )
