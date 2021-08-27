@@ -1,8 +1,8 @@
 package evaluator
 
 import objectrepr.*
-import parser.ast.Program
-import parser.ast.*
+import parser.*
+import parser.Program
 
 
 fun eval(node: Node?, environment: Environment): ObjectRepr? {

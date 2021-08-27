@@ -1,7 +1,6 @@
-package parser.ast
+package parser
 
 import lexer.TokenType
-
 
 class Program(var statements: MutableList<Statement>) : Node(TokenType.PROGRAM) {
     override fun tokenLiteral(): String {

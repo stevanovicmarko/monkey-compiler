@@ -1,7 +1,7 @@
 package objectrepr
 
-import parser.ast.BlockStatement
-import parser.ast.Identifier
+import parser.BlockStatement
+import parser.Identifier
 
 typealias ObjectType = String
 
@@ -118,6 +118,12 @@ data class ArrayRepr(val elements: List<ObjectRepr?>): ObjectRepr {
         return "[ ${elements.joinToString(", ")} ]"
     }
 
+}
+
+data class HashKey(val type: ObjectType, val value: Int)
+
+fun interface Hashable {
+    fun hashKey(): HashKey
 }
 
 data class HashPair(val key: Hashable, val value: ObjectRepr?)

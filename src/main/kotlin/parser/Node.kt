@@ -1,4 +1,4 @@
-package parser.ast
+package parser
 
 import lexer.TokenType
 

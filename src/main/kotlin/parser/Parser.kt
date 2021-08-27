@@ -3,13 +3,12 @@ package parser
 import lexer.Lexer
 import lexer.Token
 import lexer.TokenType
-import parser.ast.*
 
 
 class Parser(private val lexer: Lexer) {
     private var peekToken: Token = lexer.nextToken()
     private var currentToken: Token = peekToken
-    val errors: MutableList<String> = mutableListOf()
+    private val errors: MutableList<String> = mutableListOf()
     private val prefixParseFunctions: MutableMap<TokenType, () -> Expression?> = mutableMapOf()
     private val infixParseFunctions: MutableMap<TokenType, (expression: Expression?) -> Expression?> = mutableMapOf()
 
