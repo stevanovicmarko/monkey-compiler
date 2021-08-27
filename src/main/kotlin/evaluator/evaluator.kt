@@ -272,7 +272,7 @@ fun evalIndexExpression(left: ObjectRepr?, index: ObjectRepr?): ObjectRepr? {
     if (left is HashRepr) {
         return evalHashIndexExpression(left, index)
     }
-    return ErrorRepr("Index operator not supported ${left?.inspect()}")
+    return ErrorRepr("Index operator not supported $left")
 }
 
 fun evalHashIndexExpression(hashRepr: HashRepr, index: ObjectRepr?): ObjectRepr? {

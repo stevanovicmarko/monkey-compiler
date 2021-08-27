@@ -11,6 +11,7 @@ fun main() {
     let getName = fn(person) { person["name"]; };
     let x = getName(people[1]);
     puts(x);
+    puts(people);
     """
     val lexer = Lexer(input)
     val parser = Parser(lexer)

@@ -61,7 +61,8 @@ fun push(vararg input: ObjectRepr?): ObjectRepr {
 }
 
 fun puts(vararg input: ObjectRepr?): ObjectRepr? {
-    println(input.joinToString(", "))
+    val printableValues = input.joinToString(", ") { it -> it?.inspect() ?: "$it does not support printing" }
+    println(printableValues)
     return null
 }
 

@@ -23,13 +23,13 @@ enum class DataNames {
     ERROR
 }
 
-data class IntegerRepr(val value: Int) : ObjectRepr, Hashable {
+data class IntegerRepr(val value: Int) : Hashable {
     override fun objectType(): ObjectType {
         return DataNames.INTEGER.toString()
     }
 
     override fun inspect(): String {
-        return value.toString()
+        return "$value"
     }
 
     override fun hashKey(): HashKey {
@@ -37,13 +37,13 @@ data class IntegerRepr(val value: Int) : ObjectRepr, Hashable {
     }
 }
 
-data class BooleanRepr(val value: Boolean) : ObjectRepr, Hashable {
+data class BooleanRepr(val value: Boolean) : Hashable {
     override fun objectType(): ObjectType {
         return DataNames.BOOLEAN.toString()
     }
 
     override fun inspect(): String {
-        return value.toString()
+        return "$value"
     }
 
     override fun hashKey(): HashKey {
@@ -57,7 +57,7 @@ class NullRepr : ObjectRepr {
     }
 
     override fun inspect(): String {
-        return "null"
+        return "NULL"
     }
 }
 
@@ -67,7 +67,7 @@ data class ReturnRepr(val value: ObjectRepr?) : ObjectRepr {
     }
 
     override fun inspect(): String {
-        return "return value"
+        return "Return value: ${value?.inspect()}"
     }
 }
 
@@ -77,7 +77,7 @@ data class ErrorRepr(val message: String) : ObjectRepr {
     }
 
     override fun inspect(): String {
-        return "ERROR: $message"
+        return "Error: $message"
     }
 }
 
@@ -91,17 +91,18 @@ data class FunctionRepr(
     }
 
     override fun inspect(): String {
-        return "fn( ${parameters?.joinToString(", ")} ){\n $body \n}"
+        val functionParams = parameters?.joinToString(", ") { it -> it.value }
+        return "Function: parameters=($functionParams)"
     }
 }
 
-data class StringRepr(val value: String) : ObjectRepr, Hashable {
+data class StringRepr(val value: String) : Hashable {
     override fun objectType(): ObjectType {
         return DataNames.STRING.toString()
     }
 
     override fun inspect(): String {
-        return value
+        return "\"$value\""
     }
 
     override fun hashKey(): HashKey {
@@ -109,32 +110,34 @@ data class StringRepr(val value: String) : ObjectRepr, Hashable {
     }
 }
 
-data class ArrayRepr(val elements: List<ObjectRepr?>): ObjectRepr {
+data class ArrayRepr(val elements: List<ObjectRepr?>) : ObjectRepr {
     override fun objectType(): ObjectType {
-       return DataNames.ARRAY.toString()
+        return DataNames.ARRAY.toString()
     }
 
     override fun inspect(): String {
-        return "[ ${elements.joinToString(", ")} ]"
+        val arrayElements = elements.map { it -> it?.inspect() }.joinToString(", ")
+        return "Array: [$arrayElements]"
     }
 
 }
 
 data class HashKey(val type: ObjectType, val value: Int)
 
-fun interface Hashable {
+interface Hashable : ObjectRepr {
     fun hashKey(): HashKey
 }
 
 data class HashPair(val key: Hashable, val value: ObjectRepr?)
 
-data class HashRepr(val pairs: MutableMap<HashKey, HashPair> ): ObjectRepr {
+data class HashRepr(val pairs: MutableMap<HashKey, HashPair>) : ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.HASH.toString()
     }
 
     override fun inspect(): String {
-        return "{ ${pairs.entries} }"
+        val hashElements = pairs.entries.map { it -> Pair(it.value.key.inspect(), it.value.value?.inspect()) }
+        return "Hash: {${hashElements.joinToString(": ")}}"
     }
 
 }
@@ -145,6 +148,6 @@ data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr?) : Object
     }
 
     override fun inspect(): String {
-        return "builtin function"
+        return "Builtin function: "
     }
 }
