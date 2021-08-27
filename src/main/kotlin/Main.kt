@@ -6,7 +6,9 @@ import parser.Parser
 
 fun main() {
     val input = """
-    let x = { a : 2};
+    let people = [{"name": "Alice", "age": 24}, {"name": "Anna", "age": 28}];
+    let getName = fn(person) { person["name"]; };
+    getName(people[1]);
     """
     val lexer = Lexer(input)
     val parser = Parser(lexer)

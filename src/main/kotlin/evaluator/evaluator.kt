@@ -46,6 +46,7 @@ fun eval(node: Node?, environment: Environment): ObjectRepr? {
             }
             return ArrayRepr(elements)
         }
+        is HashLiteral -> evalHashLiteral(node, environment)
         is PrefixExpression -> {
             val right = eval(node.right, environment)
             if (right is ErrorRepr) {
@@ -268,5 +269,43 @@ fun evalIndexExpression(left: ObjectRepr?, index: ObjectRepr?): ObjectRepr? {
         }
         return left.elements[index.value]
     }
+    if (left is HashRepr) {
+        return evalHashIndexExpression(left, index)
+    }
     return ErrorRepr("Index operator not supported ${left?.inspect()}")
+}
+
+fun evalHashIndexExpression(hashRepr: HashRepr, index: ObjectRepr?): ObjectRepr? {
+    if (index !is Hashable) {
+        return ErrorRepr("unusable as a hash key: ${index?.objectType()}")
+    }
+    val pair = hashRepr.pairs[index.hashKey()]
+    return pair?.value
+}
+
+fun evalHashLiteral(node: HashLiteral, environment: Environment): ObjectRepr {
+    val pairs: MutableMap<HashKey, HashPair> = mutableMapOf()
+
+    for((keyNode, valueNode) in node.pairs.entries) {
+        val key = eval(keyNode, environment)
+
+        if (key is ErrorRepr) {
+            return key
+        }
+
+        if (key !is Hashable) {
+            return ErrorRepr("unusable as a hash key: ${key?.objectType()}")
+        }
+
+        val value = eval(valueNode, environment)
+
+        if (value is ErrorRepr) {
+            return value
+        }
+
+        val hashKey = key.hashKey()
+        pairs[hashKey] = HashPair(key, value)
+    }
+
+    return HashRepr(pairs)
 }
