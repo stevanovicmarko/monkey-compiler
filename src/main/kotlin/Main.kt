@@ -3,16 +3,11 @@ import lexer.Lexer
 import objectrepr.Environment
 
 import parser.Parser
+import java.nio.file.Files
+import java.nio.file.Path
 
-fun main() {
-    val input = """
-    let people = [{"name": "Alice", "age": 24}, {"name": "Anna", "age": 28}];
-    puts(people);
-    let getName = fn(person) { person["name"]; };
-    let x = getName(people[1]);
-    puts(x);
-    puts(people);
-    """
+fun main(args: Array<String>) {
+    val input = Files.readString(Path.of(args[0]))
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
