@@ -1,8 +1,7 @@
 package vm
 
 fun UShort.toBigEndianByteList(): List<UByte> {
-    return listOf<UByte>((this / 256u).toUByte(), this.toUByte())
-
+    return listOf((this / 256u).toUByte(), this.toUByte())
 }
 
 data class Definition(val name: String, val operandWidths: List<Int>)
@@ -28,4 +27,18 @@ fun makeBytecodeInstruction(opcode: Opcode, operands: List<UShort>): List<UByte>
     return instruction
 }
 
-val x: UShort = 65535u
+fun readOperands(definition: Definition, instructions: List<UByte>): Pair<List<UShort>, Int> {
+    val operands = mutableListOf<UShort>()
+    var offset = 0
+    println(instructions)
+
+    for (width in definition.operandWidths) {
+        if (width == 2) {
+            // Convert instruction Byte slice to Int starting at offset
+            val operand = instructions.slice(offset..offset+1)
+            operands.add((operand[0] * 256u + operand[1]).toUShort())
+        }
+        offset += width
+    }
+    return Pair(operands, offset)
+}
