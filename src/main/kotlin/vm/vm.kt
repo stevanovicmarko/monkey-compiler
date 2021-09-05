@@ -1,44 +1,54 @@
 package vm
 
-fun UShort.toBigEndianByteList(): List<UByte> {
-    return listOf((this / 256u).toUByte(), this.toUByte())
-}
+import objectrepr.ErrorRepr
+import objectrepr.IntegerRepr
+import objectrepr.ObjectRepr
 
-data class Definition(val name: String, val operandWidths: List<Int>)
+data class VM(
+    val bytecode: Bytecode
+) {
+    private var stackPointer: Int = 0
+    private var stack: MutableList<ObjectRepr> = mutableListOf()
 
-enum class Opcode(val code: UByte) {
-    OpConstant(0x01u)
-}
-
-var definitions: Map<Opcode, Definition> = mapOf(Opcode.OpConstant to Definition("OpConstant", listOf(2)))
-
-fun makeBytecodeInstruction(opcode: Opcode, operands: List<UShort>): List<UByte> {
-    val definition = definitions[opcode] ?: return listOf()
-    val instruction = mutableListOf(opcode.code)
-    var offset = 1
-
-    for ((index, operand) in operands.withIndex()) {
-        val width = definition.operandWidths[index]
-        if (width == 2) {
-            instruction.addAll(operand.toBigEndianByteList())
-        }
-        offset += width
+    private fun stackTop(): ObjectRepr? {
+        return if (stack.isEmpty()) null else stack[stackPointer - 1]
     }
-    return instruction
-}
 
-fun readOperands(definition: Definition, instructions: List<UByte>): Pair<List<UShort>, Int> {
-    val operands = mutableListOf<UShort>()
-    var offset = 0
-    println(instructions)
-
-    for (width in definition.operandWidths) {
-        if (width == 2) {
-            // Convert instruction Byte slice to Int starting at offset
-            val operand = instructions.slice(offset..offset+1)
-            operands.add((operand[0] * 256u + operand[1]).toUShort())
-        }
-        offset += width
+    private fun push(objectRepr: ObjectRepr) {
+        stack.add(objectRepr)
+        stackPointer++
     }
-    return Pair(operands, offset)
+
+    private fun pop(): ObjectRepr {
+        val objectRepr = stack[stackPointer-1]
+        stackPointer--
+        return objectRepr
+    }
+
+    fun run(): ErrorRepr? {
+        var ip = 0
+        while (ip < bytecode.instructions.size) {
+            when (bytecode.instructions[ip]) {
+                Opcode.OpConstant.code -> {
+                    val (high, low) = bytecode.instructions.slice(ip+1..ip+2)
+                    val constIndex = (high * 256u).toInt() + low.toInt()
+                    ip += 2
+                    push(bytecode.constants[constIndex])
+                }
+                Opcode.OpAdd.code -> {
+                    val left = pop()
+                    val right = pop()
+                    if (left is IntegerRepr && right is IntegerRepr) {
+                        val result = left.value + right.value
+                        push(IntegerRepr(result))
+                    }
+
+                }
+            }
+            ip++
+        }
+        return null
+    }
 }
+
+

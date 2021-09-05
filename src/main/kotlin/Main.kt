@@ -1,16 +1,17 @@
-import evaluator.eval
+
 import lexer.Lexer
-import objectrepr.Environment
 
 import parser.Parser
-import java.nio.file.Files
-import java.nio.file.Path
+import vm.Compiler
+import vm.VM
 
-fun main(args: Array<String>) {
-    val input = Files.readString(Path.of(args[0]))
+fun main() {
+    val input = "1 + 6"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
-    val  environment = Environment(mutableMapOf(), null)
-    eval(program, environment)
+    val compiler = Compiler()
+    compiler.compile(program)
+    val vm = VM(compiler.bytecode)
+    vm.run()
 }
