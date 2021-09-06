@@ -1,6 +1,5 @@
 package vm
 
-import objectrepr.ErrorRepr
 import objectrepr.IntegerRepr
 import objectrepr.ObjectRepr
 import parser.*
@@ -10,42 +9,51 @@ typealias Instructions = List<UByte>
 class Compiler {
     val bytecode = Bytecode(mutableListOf(), mutableListOf())
 
-    fun compile(node: Node?): ErrorRepr? {
-        return when (node) {
+    fun compile(node: Node?) {
+        when (node) {
             is Program -> {
                 for (statement in node.statements) {
-                    val err = compile(statement)
-                    if (err != null) {
-                        return err
-                    }
+                    compile(statement)
                 }
-                return null
             }
             is ExpressionStatement -> {
                 compile(node.expression)
-                emit(Opcode.OpPop)
-                return null
+                emit(Opcode.Pop)
             }
             is InfixExpression -> {
-                val left = compile(node.left)
-                if (left != null) {
-                    return left
+                // temporary hack
+                if (node.operator == "<") {
+                    compile(node.right)
+                    compile(node.left)
+                    emit(Opcode.GreaterThan)
+                    return
                 }
-                val right = compile(node.right)
-                if (right != null) {
-                    return right
+                compile(node.left)
+                compile(node.right)
+                when (node.operator) {
+                    "+" -> emit(Opcode.Add)
+                    "-" -> emit(Opcode.Sub)
+                    "*" -> emit(Opcode.Mul)
+                    "/" -> emit(Opcode.Div)
+                    ">" -> emit(Opcode.GreaterThan)
+                    "==" -> emit(Opcode.Equal)
+                    "!=" -> emit(Opcode.NotEqual)
                 }
-                if (node.operator == "+") {
-                    emit(Opcode.OpAdd)
-                }
+            }
+            is PrefixExpression -> {
+                compile(node.right)
 
-                return null
+                when (node.operator) {
+                    "!" -> emit(Opcode.Bang)
+                    "-" -> emit(Opcode.Minus)
+                }
             }
-            is IntegerLiteral -> {
-                emit(Opcode.OpConstant, addConstant(IntegerRepr(node.value)))
-                return null
+            is IntegerLiteral -> emit(Opcode.Constant, addConstant(IntegerRepr(node.value)))
+            is BooleanLiteral -> {
+                val booleanOpCode = if (node.value) Opcode.True else Opcode.False
+                emit(booleanOpCode)
             }
-            else -> null
+            else -> {}
         }
     }
 

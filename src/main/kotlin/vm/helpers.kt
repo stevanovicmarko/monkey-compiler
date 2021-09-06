@@ -10,11 +10,13 @@ fun makeBytecodeInstruction(opcode: Opcode, vararg operands: Int): List<UByte> {
     var offset = 1
 
     for ((index, operand) in operands.withIndex()) {
-        val width = definition.operandWidths[index]
+        val width = definition.operandWidths?.get(index)
         if (width == 2) {
             byteCodeInstruction.addAll(operand.toBigEndianByteList())
         }
-        offset += width
+        if (width != null) {
+            offset += width
+        }
     }
     return byteCodeInstruction
 }
@@ -22,6 +24,10 @@ fun makeBytecodeInstruction(opcode: Opcode, vararg operands: Int): List<UByte> {
 fun readOperands(definition: Definition, instructions: List<UByte>): Pair<List<UShort>, Int> {
     val operands = mutableListOf<UShort>()
     var offset = 0
+
+    if (definition.operandWidths == null) {
+        return Pair(operands, offset)
+    }
 
     for (width in definition.operandWidths) {
         if (width == 2) {
