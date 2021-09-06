@@ -21,7 +21,11 @@ class Compiler {
                 }
                 return null
             }
-            is ExpressionStatement -> compile(node.expression)
+            is ExpressionStatement -> {
+                compile(node.expression)
+                emit(Opcode.OpPop)
+                return null
+            }
             is InfixExpression -> {
                 val left = compile(node.left)
                 if (left != null) {

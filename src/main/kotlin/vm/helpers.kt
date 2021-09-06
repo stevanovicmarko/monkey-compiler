@@ -22,7 +22,6 @@ fun makeBytecodeInstruction(opcode: Opcode, vararg operands: Int): List<UByte> {
 fun readOperands(definition: Definition, instructions: List<UByte>): Pair<List<UShort>, Int> {
     val operands = mutableListOf<UShort>()
     var offset = 0
-    println(instructions)
 
     for (width in definition.operandWidths) {
         if (width == 2) {

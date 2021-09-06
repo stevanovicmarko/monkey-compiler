@@ -14,4 +14,5 @@ fun main() {
     compiler.compile(program)
     val vm = VM(compiler.bytecode)
     vm.run()
+    println(vm.bytecode)
 }

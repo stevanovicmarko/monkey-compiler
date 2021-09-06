@@ -10,8 +10,8 @@ data class VM(
     private var stackPointer: Int = 0
     private var stack: MutableList<ObjectRepr> = mutableListOf()
 
-    private fun stackTop(): ObjectRepr? {
-        return if (stack.isEmpty()) null else stack[stackPointer - 1]
+    private fun lastPoppedStackElement(): ObjectRepr {
+        return stack[stackPointer]
     }
 
     private fun push(objectRepr: ObjectRepr) {
@@ -20,7 +20,7 @@ data class VM(
     }
 
     private fun pop(): ObjectRepr {
-        val objectRepr = stack[stackPointer-1]
+        val objectRepr = stack[stackPointer - 1]
         stackPointer--
         return objectRepr
     }
@@ -30,7 +30,7 @@ data class VM(
         while (ip < bytecode.instructions.size) {
             when (bytecode.instructions[ip]) {
                 Opcode.OpConstant.code -> {
-                    val (high, low) = bytecode.instructions.slice(ip+1..ip+2)
+                    val (high, low) = bytecode.instructions.slice(ip + 1..ip + 2)
                     val constIndex = (high * 256u).toInt() + low.toInt()
                     ip += 2
                     push(bytecode.constants[constIndex])
@@ -42,8 +42,8 @@ data class VM(
                         val result = left.value + right.value
                         push(IntegerRepr(result))
                     }
-
                 }
+                Opcode.OpPop.code -> pop()
             }
             ip++
         }
