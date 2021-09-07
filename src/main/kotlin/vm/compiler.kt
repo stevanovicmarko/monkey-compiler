@@ -8,6 +8,57 @@ typealias Instructions = List<UByte>
 
 class Compiler {
     val bytecode = Bytecode(mutableListOf(), mutableListOf())
+    private var lastInstruction: EmittedInstruction? = null
+    private var previousInstruction: EmittedInstruction? = null
+
+    private fun addConstant(objectRepr: ObjectRepr): Int {
+        bytecode.constants.add(objectRepr)
+        return bytecode.constants.size - 1
+    }
+
+    private fun addInstruction(instructions: List<UByte>): Int {
+        val position = instructions.size
+        bytecode.instructions.addAll(instructions)
+        return position
+    }
+
+    private fun setLastInstruction(opcode: Opcode, position: Int) {
+        val previous = lastInstruction
+        val last = EmittedInstruction(opcode, position)
+        previousInstruction = previous
+        lastInstruction = last
+    }
+
+    private fun emit(opcode: Opcode, vararg operands: Int): Int {
+        val instructions = makeBytecodeInstruction(opcode, *operands)
+        val position = addInstruction(instructions)
+        setLastInstruction(opcode, position)
+        return position
+    }
+
+    private fun lastInstructionIsPop(): Boolean {
+        return lastInstruction?.opcode == Opcode.Pop
+    }
+
+    private fun removeLastPop() {
+        bytecode.instructions.removeLast()
+        lastInstruction = previousInstruction
+    }
+
+    private fun replaceInstruction(position: Int, newInstruction: List<UByte>) {
+        for (index in 0..newInstruction.size) {
+            bytecode.instructions[position + index] = newInstruction[index]
+        }
+    }
+
+    private fun changeOperand(operandPosition: Int, operand: Int) {
+        val bytecodeInstruction = bytecode.instructions[operandPosition]
+        val opcode = Opcode.values().find { it.code == bytecodeInstruction }
+        if (opcode != null) {
+            val newInstruction = makeBytecodeInstruction(opcode, operand)
+            replaceInstruction(operandPosition, newInstruction)
+        }
+    }
 
     fun compile(node: Node?) {
         when (node) {
@@ -48,28 +99,44 @@ class Compiler {
                     "-" -> emit(Opcode.Minus)
                 }
             }
+            is IfExpression -> {
+                compile(node.condition)
+                // 9999 is a dummy value that will be removed via back-patching
+                val jumpNotTruthyPosition = emit(Opcode.JumpNoTruthy, 9999)
+                compile(node.consequence)
+
+                if (lastInstructionIsPop()) {
+                    removeLastPop()
+                }
+
+                changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
+
+                if (node.alternative == null) {
+                    changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
+                } else {
+                    val jumpPosition = emit(Opcode.Jump, 9999)
+                    changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
+                    compile(node.alternative)
+                    if (lastInstructionIsPop()) {
+                        removeLastPop()
+                    }
+                    changeOperand(jumpPosition, bytecode.instructions.size)
+                }
+
+            }
+            is BlockStatement -> {
+                for (statement in node.statements) {
+                    compile(statement)
+                }
+            }
             is IntegerLiteral -> emit(Opcode.Constant, addConstant(IntegerRepr(node.value)))
             is BooleanLiteral -> {
                 val booleanOpCode = if (node.value) Opcode.True else Opcode.False
                 emit(booleanOpCode)
             }
-            else -> {}
+            else -> {
+                // FIX exhaustiveness
+            }
         }
-    }
-
-    private fun addConstant(objectRepr: ObjectRepr): Int {
-        bytecode.constants.add(objectRepr)
-        return bytecode.constants.size - 1
-    }
-
-    private fun addInstruction(instructions: List<UByte>): Int {
-        val position = instructions.size
-        bytecode.instructions.addAll(instructions)
-        return position
-    }
-
-    private fun emit(opcode: Opcode, vararg operands: Int): Int {
-        val instructions = makeBytecodeInstruction(opcode, *operands)
-        return addInstruction(instructions)
     }
 }
