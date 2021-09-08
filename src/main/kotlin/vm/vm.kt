@@ -1,5 +1,6 @@
 package vm
 
+import evaluator.isTruthy
 import objectrepr.BooleanRepr
 import objectrepr.IntegerRepr
 import objectrepr.ObjectRepr
@@ -31,7 +32,7 @@ data class VM(
         when (opcode) {
             Opcode.Equal -> push(BooleanRepr(right.value == left.value))
             Opcode.NotEqual -> push(BooleanRepr(right.value != left.value))
-            Opcode.GreaterThan -> push(BooleanRepr(left.value > right.value))
+            Opcode.GreaterThan -> push(BooleanRepr(right.value > left.value))
             else -> {
                 // FIX exhaustiveness
             }
@@ -92,6 +93,21 @@ data class VM(
 //                     ERROR handling goes here
 //                    }
 
+                }
+                Opcode.Jump -> {
+                    val (high, low) = bytecode.instructions.slice(ip + 1..ip + 2)
+                    val position = (high * 256u).toInt() + low.toInt()
+                    // This - 1 could be wrong
+                    ip = position - 1
+                }
+                Opcode.JumpNotTruthy -> {
+                    val (high, low) = bytecode.instructions.slice(ip + 1..ip + 2)
+                    val position = (high * 256u).toInt() + low.toInt()
+                    ip += 2
+                    val condition = pop()
+                    if (!isTruthy(condition)) {
+                        ip = position - 1
+                    }
                 }
                 Opcode.Pop -> pop()
             }

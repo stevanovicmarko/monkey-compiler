@@ -17,7 +17,7 @@ class Compiler {
     }
 
     private fun addInstruction(instructions: List<UByte>): Int {
-        val position = instructions.size
+        val position = bytecode.instructions.size
         bytecode.instructions.addAll(instructions)
         return position
     }
@@ -46,7 +46,7 @@ class Compiler {
     }
 
     private fun replaceInstruction(position: Int, newInstruction: List<UByte>) {
-        for (index in 0..newInstruction.size) {
+        for (index in newInstruction.indices) {
             bytecode.instructions[position + index] = newInstruction[index]
         }
     }
@@ -102,7 +102,7 @@ class Compiler {
             is IfExpression -> {
                 compile(node.condition)
                 // 9999 is a dummy value that will be removed via back-patching
-                val jumpNotTruthyPosition = emit(Opcode.JumpNoTruthy, 9999)
+                val jumpNotTruthyPosition = emit(Opcode.JumpNotTruthy, 9999)
                 compile(node.consequence)
 
                 if (lastInstructionIsPop()) {

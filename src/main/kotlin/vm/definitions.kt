@@ -15,7 +15,7 @@ enum class Opcode(val code: UByte) {
     GreaterThan(0x09u),
     Minus(0x0Au),
     Bang(0x0Bu),
-    JumpNoTruthy(0x0Cu),
+    JumpNotTruthy(0x0Cu),
     Jump(0x0Du),
     Pop(0xFFu)
 }
@@ -35,7 +35,7 @@ var definitions: Map<Opcode, OpcodeDefinition> = mapOf(
     Opcode.GreaterThan to OpcodeDefinition(Opcode.GreaterThan),
     Opcode.Minus to OpcodeDefinition(Opcode.Minus),
     Opcode.Bang to OpcodeDefinition(Opcode.Bang),
-    Opcode.JumpNoTruthy to OpcodeDefinition(Opcode.JumpNoTruthy, listOf(2)),
+    Opcode.JumpNotTruthy to OpcodeDefinition(Opcode.JumpNotTruthy, listOf(2)),
     Opcode.Jump to OpcodeDefinition(Opcode.Jump, listOf(2)),
     Opcode.Pop to OpcodeDefinition(Opcode.Pop)
 )
@@ -65,8 +65,18 @@ data class Bytecode(val instructions: MutableList<UByte>, val constants: Mutable
                 Opcode.GreaterThan.code -> str.append("GreaterThan :: 0x${op.toString(16)}\n")
                 Opcode.Bang.code -> str.append("Bang :: 0x${op.toString(16)}\n")
                 Opcode.Minus.code -> str.append("Minus :: 0x${op.toString(16)}\n")
-                Opcode.JumpNoTruthy.code -> str.append("JumpNoTruthy :: 0x${op.toString(16)}\n")
-                Opcode.Jump.code -> str.append("Jump :: 0x${op.toString(16)}\n")
+                Opcode.JumpNotTruthy.code -> {
+                    val (high, low) = instructions.slice(ip + 1..ip + 2)
+                    val jumpTo = (high * 256u).toInt() + low.toInt()
+                    str.append("JumpNotTruthy :: 0x${op.toString(16)} :: $jumpTo\n")
+                    ip += 2
+                }
+                Opcode.Jump.code -> {
+                    val (high, low) = instructions.slice(ip + 1..ip + 2)
+                    val jumpTo = (high * 256u).toInt() + low.toInt()
+                    str.append("JumpTo :: 0x${op.toString(16)} :: $jumpTo\n")
+                    ip += 2
+                }
                 Opcode.Pop.code -> str.append("Pop :: 0x${op.toString(16)}\n")
             }
             ip++
