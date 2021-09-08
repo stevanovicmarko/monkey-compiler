@@ -3,6 +3,7 @@ package vm
 import evaluator.isTruthy
 import objectrepr.BooleanRepr
 import objectrepr.IntegerRepr
+import objectrepr.NullRepr
 import objectrepr.ObjectRepr
 
 data class VM(
@@ -80,6 +81,7 @@ data class VM(
                 Opcode.Bang -> {
                     val computed = when (val operand = pop()) {
                         is BooleanRepr -> !operand.value
+                        is NullRepr -> true
                         else -> false
                     }
                     push(BooleanRepr(computed))
@@ -109,6 +111,7 @@ data class VM(
                         ip = position - 1
                     }
                 }
+                Opcode.NullOp -> push(NullRepr())
                 Opcode.Pop -> pop()
             }
             ip++

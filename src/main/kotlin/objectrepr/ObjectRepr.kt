@@ -56,6 +56,10 @@ class NullRepr : ObjectRepr {
         return DataNames.NULL.toString()
     }
 
+    override fun toString(): String {
+        return "NULL"
+    }
+
     override fun inspect(): String {
         return "NULL"
     }

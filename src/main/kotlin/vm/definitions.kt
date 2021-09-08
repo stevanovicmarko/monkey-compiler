@@ -17,6 +17,7 @@ enum class Opcode(val code: UByte) {
     Bang(0x0Bu),
     JumpNotTruthy(0x0Cu),
     Jump(0x0Du),
+    NullOp(0x0Eu),
     Pop(0xFFu)
 }
 
@@ -37,6 +38,7 @@ var definitions: Map<Opcode, OpcodeDefinition> = mapOf(
     Opcode.Bang to OpcodeDefinition(Opcode.Bang),
     Opcode.JumpNotTruthy to OpcodeDefinition(Opcode.JumpNotTruthy, listOf(2)),
     Opcode.Jump to OpcodeDefinition(Opcode.Jump, listOf(2)),
+    Opcode.NullOp to OpcodeDefinition(Opcode.NullOp),
     Opcode.Pop to OpcodeDefinition(Opcode.Pop)
 )
 
@@ -46,40 +48,29 @@ data class Bytecode(val instructions: MutableList<UByte>, val constants: Mutable
         val str = StringBuilder()
         var ip = 0
         while (ip < instructions.size) {
-            when (val op = instructions[ip]) {
-                Opcode.Constant.code -> {
-                    val (high, low) = instructions.slice(ip + 1..ip + 2)
-                    val constIndex = (high * 256u).toInt() + low.toInt()
-                    val constantValue = constants[constIndex]
-                    str.append("Constant :: 0x${op.toString(16)} :: $constantValue\n")
-                    ip += 2
-                }
-                Opcode.Add.code -> str.append("Add :: 0x${op.toString(16)}\n")
-                Opcode.Sub.code -> str.append("Sub :: 0x${op.toString(16)}\n")
-                Opcode.Mul.code -> str.append("Mul :: 0x${op.toString(16)}\n")
-                Opcode.Div.code -> str.append("Div :: 0x${op.toString(16)}\n")
-                Opcode.True.code -> str.append("True :: 0x${op.toString(16)}\n")
-                Opcode.False.code -> str.append("False :: 0x${op.toString(16)}\n")
-                Opcode.Equal.code -> str.append("Equal :: 0x${op.toString(16)}\n")
-                Opcode.NotEqual.code -> str.append("NotEqual :: 0x${op.toString(16)}\n")
-                Opcode.GreaterThan.code -> str.append("GreaterThan :: 0x${op.toString(16)}\n")
-                Opcode.Bang.code -> str.append("Bang :: 0x${op.toString(16)}\n")
-                Opcode.Minus.code -> str.append("Minus :: 0x${op.toString(16)}\n")
-                Opcode.JumpNotTruthy.code -> {
-                    val (high, low) = instructions.slice(ip + 1..ip + 2)
-                    val jumpTo = (high * 256u).toInt() + low.toInt()
-                    str.append("JumpNotTruthy :: 0x${op.toString(16)} :: $jumpTo\n")
-                    ip += 2
-                }
-                Opcode.Jump.code -> {
-                    val (high, low) = instructions.slice(ip + 1..ip + 2)
-                    val jumpTo = (high * 256u).toInt() + low.toInt()
-                    str.append("JumpTo :: 0x${op.toString(16)} :: $jumpTo\n")
-                    ip += 2
-                }
-                Opcode.Pop.code -> str.append("Pop :: 0x${op.toString(16)}\n")
+            val opcode = Opcode.values().find { it.code == instructions[ip] }
+            val hexadecimalRepresentation = opcode?.code?.toString(16) ?: "Unknown opcode"
+            str.append("$opcode :: 0x$hexadecimalRepresentation ")
+
+            if (opcode == Opcode.Constant) {
+                val (high, low) = instructions.slice(ip + 1..ip + 2)
+                val constIndex = (high * 256u).toInt() + low.toInt()
+                val constantValue = constants[constIndex]
+                str.append(":: value = $constantValue")
+                ip += 2
+            } else if (opcode == Opcode.JumpNotTruthy) {
+                val (high, low) = instructions.slice(ip + 1..ip + 2)
+                val jumpTo = (high * 256u).toInt() + low.toInt()
+                str.append(":: jumpLocation = $jumpTo")
+                ip += 2
+            } else if (opcode == Opcode.Jump) {
+                val (high, low) = instructions.slice(ip + 1..ip + 2)
+                val jumpTo = (high * 256u).toInt() + low.toInt()
+                str.append(":: jumpLocation = $jumpTo")
+                ip += 2
             }
             ip++
+            str.append("\n")
         }
         return str.toString()
     }

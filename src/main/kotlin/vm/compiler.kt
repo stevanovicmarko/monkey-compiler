@@ -108,21 +108,19 @@ class Compiler {
                 if (lastInstructionIsPop()) {
                     removeLastPop()
                 }
-
+                // 9999 is a dummy value that will be removed via back-patching
+                val jumpPosition = emit(Opcode.Jump, 9999)
                 changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
 
                 if (node.alternative == null) {
-                    changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
+                    emit(Opcode.NullOp)
                 } else {
-                    val jumpPosition = emit(Opcode.Jump, 9999)
-                    changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
                     compile(node.alternative)
                     if (lastInstructionIsPop()) {
                         removeLastPop()
                     }
-                    changeOperand(jumpPosition, bytecode.instructions.size)
                 }
-
+                changeOperand(jumpPosition, bytecode.instructions.size)
             }
             is BlockStatement -> {
                 for (statement in node.statements) {

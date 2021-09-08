@@ -6,13 +6,13 @@ import vm.Compiler
 import vm.VM
 
 fun main() {
-    val input = "if (10 < 5) { 10; } else { 12; }"
+    val input = "if ((if (false) { 10 })) { 10 } else { 20 }"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
     val compiler = Compiler()
     compiler.compile(program)
-    println(compiler.bytecode)
+//    println(compiler.bytecode)
     val vm = VM(compiler.bytecode)
     vm.run()
 }
