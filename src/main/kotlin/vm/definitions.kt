@@ -18,6 +18,8 @@ enum class Opcode(val code: UByte) {
     JumpNotTruthy(0x0Cu),
     Jump(0x0Du),
     NullOp(0x0Eu),
+    GetGlobal(0x0Fu),
+    SetGlobal(0x10u),
     Pop(0xFFu)
 }
 
@@ -39,8 +41,15 @@ var definitions: Map<Opcode, OpcodeDefinition> = mapOf(
     Opcode.JumpNotTruthy to OpcodeDefinition(Opcode.JumpNotTruthy, listOf(2)),
     Opcode.Jump to OpcodeDefinition(Opcode.Jump, listOf(2)),
     Opcode.NullOp to OpcodeDefinition(Opcode.NullOp),
-    Opcode.Pop to OpcodeDefinition(Opcode.Pop)
+    Opcode.Pop to OpcodeDefinition(Opcode.Pop),
+    Opcode.GetGlobal to OpcodeDefinition(Opcode.GetGlobal, listOf(2)),
+    Opcode.SetGlobal to OpcodeDefinition(Opcode.SetGlobal, listOf(2))
 )
+
+fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
+    val (high, low) = slice(startingPoint + 1..startingPoint + 2)
+    return (high * 256u).toInt() + low.toInt()
+}
 
 data class Bytecode(val instructions: MutableList<UByte>, val constants: MutableList<ObjectRepr>) {
 
@@ -52,21 +61,27 @@ data class Bytecode(val instructions: MutableList<UByte>, val constants: Mutable
             val hexadecimalRepresentation = opcode?.code?.toString(16) ?: "Unknown opcode"
             str.append("$opcode :: 0x$hexadecimalRepresentation ")
 
+
             if (opcode == Opcode.Constant) {
-                val (high, low) = instructions.slice(ip + 1..ip + 2)
-                val constIndex = (high * 256u).toInt() + low.toInt()
+                val constIndex = instructions.extractUShortAt(ip)
                 val constantValue = constants[constIndex]
                 str.append(":: value = $constantValue")
                 ip += 2
             } else if (opcode == Opcode.JumpNotTruthy) {
-                val (high, low) = instructions.slice(ip + 1..ip + 2)
-                val jumpTo = (high * 256u).toInt() + low.toInt()
+                val jumpTo = instructions.extractUShortAt(ip)
                 str.append(":: jumpLocation = $jumpTo")
                 ip += 2
             } else if (opcode == Opcode.Jump) {
-                val (high, low) = instructions.slice(ip + 1..ip + 2)
-                val jumpTo = (high * 256u).toInt() + low.toInt()
+                val jumpTo = instructions.extractUShortAt(ip)
                 str.append(":: jumpLocation = $jumpTo")
+                ip += 2
+            } else if (opcode == Opcode.GetGlobal) {
+                val setTo = instructions.extractUShortAt(ip)
+                str.append(":: get variable from location = $setTo")
+                ip += 2
+            } else if (opcode == Opcode.SetGlobal) {
+                val setFrom = instructions.extractUShortAt(ip)
+                str.append(":: set variable at location = $setFrom")
                 ip += 2
             }
             ip++

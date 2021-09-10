@@ -10,6 +10,7 @@ class Compiler {
     val bytecode = Bytecode(mutableListOf(), mutableListOf())
     private var lastInstruction: EmittedInstruction? = null
     private var previousInstruction: EmittedInstruction? = null
+    private val symbolTable = SymbolTable(mutableMapOf(), 0)
 
     private fun addConstant(objectRepr: ObjectRepr): Int {
         bytecode.constants.add(objectRepr)
@@ -102,14 +103,14 @@ class Compiler {
             is IfExpression -> {
                 compile(node.condition)
                 // 9999 is a dummy value that will be removed via back-patching
-                val jumpNotTruthyPosition = emit(Opcode.JumpNotTruthy, 9999)
+                val codePatch = 9999
+                val jumpNotTruthyPosition = emit(Opcode.JumpNotTruthy, codePatch)
                 compile(node.consequence)
 
                 if (lastInstructionIsPop()) {
                     removeLastPop()
                 }
-                // 9999 is a dummy value that will be removed via back-patching
-                val jumpPosition = emit(Opcode.Jump, 9999)
+                val jumpPosition = emit(Opcode.Jump, codePatch)
                 changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
 
                 if (node.alternative == null) {
@@ -122,19 +123,25 @@ class Compiler {
                 }
                 changeOperand(jumpPosition, bytecode.instructions.size)
             }
-            is BlockStatement -> {
-                for (statement in node.statements) {
-                    compile(statement)
-                }
-            }
+            is BlockStatement -> node.statements.forEach { compile(it) }
             is IntegerLiteral -> emit(Opcode.Constant, addConstant(IntegerRepr(node.value)))
             is BooleanLiteral -> {
                 val booleanOpCode = if (node.value) Opcode.True else Opcode.False
                 emit(booleanOpCode)
             }
-            else -> {
-                // FIX exhaustiveness
+            is LetStatement -> {
+                compile(node.value)
+                val value = node.name?.value
+                if (value != null) {
+                    val symbol = symbolTable.define(value)
+                    emit(Opcode.SetGlobal, symbol.index)
+                }
             }
+            is Identifier -> {
+                val symbol = symbolTable.store.getValue(node.value)
+                emit(Opcode.GetGlobal, symbol.index)
+            }
+            else -> throw Exception("Unhandled node type:: ${node!!::class.java}")
         }
     }
 }

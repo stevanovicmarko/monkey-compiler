@@ -10,6 +10,7 @@ data class VM(
     val bytecode: Bytecode
 ) {
     private var stack: MutableList<ObjectRepr> = mutableListOf()
+    private var globals = Array<ObjectRepr>(65536){ NullRepr()}
 
     private fun push(objectRepr: ObjectRepr) {
         stack.add(objectRepr)
@@ -45,8 +46,7 @@ data class VM(
         while (ip < bytecode.instructions.size) {
             when (val opcode = Opcode.values().find { it.code == bytecode.instructions[ip] })  {
                 Opcode.Constant -> {
-                    val (high, low) = bytecode.instructions.slice(ip + 1..ip + 2)
-                    val constIndex = (high * 256u).toInt() + low.toInt()
+                    val constIndex = bytecode.instructions.extractUShortAt(ip)
                     ip += 2
                     push(bytecode.constants[constIndex])
                 }
@@ -97,19 +97,26 @@ data class VM(
 
                 }
                 Opcode.Jump -> {
-                    val (high, low) = bytecode.instructions.slice(ip + 1..ip + 2)
-                    val position = (high * 256u).toInt() + low.toInt()
-                    // This - 1 could be wrong
+                    val position = bytecode.instructions.extractUShortAt(ip)
                     ip = position - 1
                 }
                 Opcode.JumpNotTruthy -> {
-                    val (high, low) = bytecode.instructions.slice(ip + 1..ip + 2)
-                    val position = (high * 256u).toInt() + low.toInt()
+                    val position = bytecode.instructions.extractUShortAt(ip)
                     ip += 2
                     val condition = pop()
                     if (!isTruthy(condition)) {
                         ip = position - 1
                     }
+                }
+                Opcode.SetGlobal -> {
+                    val globalIndex = bytecode.instructions.extractUShortAt(ip)
+                    ip += 2
+                    globals[globalIndex] = pop()
+                }
+                Opcode.GetGlobal -> {
+                    val globalIndex = bytecode.instructions.extractUShortAt(ip)
+                    ip += 2
+                    push(globals[globalIndex])
                 }
                 Opcode.NullOp -> push(NullRepr())
                 Opcode.Pop -> pop()
