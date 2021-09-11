@@ -2,6 +2,7 @@ package vm
 
 import objectrepr.IntegerRepr
 import objectrepr.ObjectRepr
+import objectrepr.StringRepr
 import parser.*
 
 typealias Instructions = List<UByte>
@@ -125,6 +126,7 @@ class Compiler {
             }
             is BlockStatement -> node.statements.forEach { compile(it) }
             is IntegerLiteral -> emit(Opcode.Constant, addConstant(IntegerRepr(node.value)))
+            is StringLiteral -> emit(Opcode.Constant, addConstant(StringRepr(node.value)))
             is BooleanLiteral -> {
                 val booleanOpCode = if (node.value) Opcode.True else Opcode.False
                 emit(booleanOpCode)

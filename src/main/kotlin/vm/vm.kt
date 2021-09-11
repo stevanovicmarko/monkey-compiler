@@ -1,16 +1,14 @@
 package vm
 
 import evaluator.isTruthy
-import objectrepr.BooleanRepr
-import objectrepr.IntegerRepr
-import objectrepr.NullRepr
-import objectrepr.ObjectRepr
+import objectrepr.*
+
 
 data class VM(
     val bytecode: Bytecode
 ) {
     private var stack: MutableList<ObjectRepr> = mutableListOf()
-    private var globals = Array<ObjectRepr>(65536){ NullRepr()}
+    private var globals = Array<ObjectRepr>(65536) { NullRepr() }
 
     private fun push(objectRepr: ObjectRepr) {
         stack.add(objectRepr)
@@ -20,13 +18,29 @@ data class VM(
         return stack.removeLast()
     }
 
-    private fun executeArithmeticExpression(opcode: Opcode, left: IntegerRepr, right: IntegerRepr): Int? {
-        return when (opcode) {
-            Opcode.Add -> left.value + right.value
-            Opcode.Sub -> left.value - right.value
-            Opcode.Mul -> left.value * right.value
-            Opcode.Div -> left.value / right.value
-            else -> null
+
+    private fun executeBinaryOperation(opcode: Opcode) {
+        val (left, right) = Pair(pop(), pop())
+        if (left is IntegerRepr && right is IntegerRepr) {
+            val result = when (opcode) {
+                Opcode.Add -> left.value + right.value
+                Opcode.Sub -> left.value - right.value
+                Opcode.Mul -> left.value * right.value
+                Opcode.Div -> left.value / right.value
+                else -> throw Exception(
+                    "not an integer arithmetic operation :: ${
+                        Opcode.values().find { it == opcode }
+                    }"
+                )
+            }
+            push(IntegerRepr(result))
+        } else if (left is StringRepr && right is StringRepr && opcode == Opcode.Add) {
+            push(StringRepr(right.value + left.value))
+        } else {
+            throw Exception(
+                "incompatible binary operands $left, $right  and  operation :: ${
+                    Opcode.values().find { it == opcode }
+                }")
         }
     }
 
@@ -35,16 +49,14 @@ data class VM(
             Opcode.Equal -> push(BooleanRepr(right.value == left.value))
             Opcode.NotEqual -> push(BooleanRepr(right.value != left.value))
             Opcode.GreaterThan -> push(BooleanRepr(right.value > left.value))
-            else -> {
-                // FIX exhaustiveness
-            }
+            else -> throw Exception("not an integer comparison operation :: ${Opcode.values().find { it == opcode }}")
         }
     }
 
     fun run() {
         var ip = 0
         while (ip < bytecode.instructions.size) {
-            when (val opcode = Opcode.values().find { it.code == bytecode.instructions[ip] })  {
+            when (val opcode = Opcode.values().find { it.code == bytecode.instructions[ip] }) {
                 Opcode.Constant -> {
                     val constIndex = bytecode.instructions.extractUShortAt(ip)
                     ip += 2
@@ -53,15 +65,7 @@ data class VM(
                 Opcode.Add,
                 Opcode.Sub,
                 Opcode.Mul,
-                Opcode.Div -> {
-                    val (left, right) = Pair(pop(), pop())
-                    if (left is IntegerRepr && right is IntegerRepr) {
-                        val result = executeArithmeticExpression(opcode, left, right)
-                        if (result != null) {
-                            push(IntegerRepr(result))
-                        }
-                    }
-                }
+                Opcode.Div -> executeBinaryOperation(opcode)
                 Opcode.True -> push(BooleanRepr(true))
                 Opcode.False -> push(BooleanRepr(false))
                 Opcode.Equal,
@@ -91,10 +95,6 @@ data class VM(
                     if (operand is IntegerRepr) {
                         push(IntegerRepr(-operand.value))
                     }
-//                    else {
-//                     ERROR handling goes here
-//                    }
-
                 }
                 Opcode.Jump -> {
                     val position = bytecode.instructions.extractUShortAt(ip)
