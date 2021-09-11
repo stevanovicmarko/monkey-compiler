@@ -155,6 +155,11 @@ class Compiler {
                 val symbol = symbolTable.store.getValue(node.value)
                 emit(Opcode.GetGlobal, symbol.index)
             }
+            is IndexExpression -> {
+                compile(node.left)
+                compile(node.index)
+                emit(Opcode.Index)
+            }
             else -> throw Exception("Unhandled node type:: ${node!!::class.java}")
         }
     }

@@ -55,7 +55,7 @@ data class VM(
 
     private fun buildArray(startIndex: Int, endIndex: Int): ObjectRepr {
         val elements = mutableListOf<ObjectRepr>()
-        for (index in endIndex-1 downTo startIndex) {
+        for (index in startIndex until  endIndex) {
             elements.add(stack[index])
         }
         return ArrayRepr(elements)
@@ -65,7 +65,7 @@ data class VM(
         val pairs = mutableMapOf<HashKey, HashPair>()
         for (index in startIndex until endIndex step 2) {
             val key = stack[index]
-            val value = stack[index+1]
+            val value = stack[index + 1]
             if (key is Hashable) {
                 pairs[key.hashKey()] = HashPair(key, value)
             } else {
@@ -73,6 +73,29 @@ data class VM(
             }
         }
         return HashRepr(pairs)
+    }
+
+    private fun executeArrayIndex(arrayRepr: ArrayRepr, index: IntegerRepr) {
+        if (index.value < 0 || index.value > arrayRepr.elements.size - 1) {
+           push(NullRepr())
+        } else {
+           push(arrayRepr.elements[index.value] ?: NullRepr())
+        }
+    }
+
+    private fun executeHashIndex(hash: HashRepr, index: ObjectRepr) {
+        if (index is Hashable) {
+            val entry = hash.pairs[index.hashKey()]
+            push(entry?.value ?: NullRepr())
+        } else throw Exception("index is not hashable: $index")
+    }
+
+    private fun executeIndexExpression(left: ObjectRepr, index: ObjectRepr) {
+        if (left is ArrayRepr && index is IntegerRepr) {
+            executeArrayIndex(left, index)
+        } else if (left is HashRepr) {
+            executeHashIndex(left, index)
+        } else throw Exception("Invalid index operands: $left, $index")
     }
 
     fun run() {
@@ -144,13 +167,19 @@ data class VM(
                     val numberOfElements = bytecode.instructions.extractUShortAt(ip)
                     ip += 2
                     val arrayRepr = buildArray(stack.size - numberOfElements, stack.size)
+                    stack.subList(0, numberOfElements).clear()
                     push(arrayRepr)
                 }
                 Opcode.Hash -> {
                     val numberOfElements = bytecode.instructions.extractUShortAt(ip)
                     ip += 2
                     val hashRepr = buildHash(stack.size - numberOfElements, stack.size)
+                    stack.subList(0, numberOfElements).clear()
                     push(hashRepr)
+                }
+                Opcode.Index -> {
+                    val (index, left) = Pair(pop(), pop())
+                    executeIndexExpression(left, index)
                 }
                 Opcode.NullOp -> push(NullRepr())
                 Opcode.Pop -> pop()

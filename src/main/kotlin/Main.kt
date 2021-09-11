@@ -6,7 +6,7 @@ import vm.Compiler
 import vm.VM
 
 fun main() {
-    val input = "{1 + 1: 2 * 2, 3 + 3: 4 * 4}"
+    val input = "[1, 2, 3][99]"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()

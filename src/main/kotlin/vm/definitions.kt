@@ -22,6 +22,7 @@ enum class Opcode(val code: UByte) {
     SetGlobal(0x10u),
     Array(0x11u),
     Hash(0x12u),
+    Index(0x013u),
     Pop(0xFFu)
 }
 
@@ -47,7 +48,8 @@ var definitions: Map<Opcode, OpcodeDefinition> = mapOf(
     Opcode.GetGlobal to OpcodeDefinition(Opcode.GetGlobal, listOf(2)),
     Opcode.SetGlobal to OpcodeDefinition(Opcode.SetGlobal, listOf(2)),
     Opcode.Array to OpcodeDefinition(Opcode.Array, listOf(2)),
-    Opcode.Hash to OpcodeDefinition(Opcode.Hash, listOf(2))
+    Opcode.Hash to OpcodeDefinition(Opcode.Hash, listOf(2)),
+    Opcode.Index to OpcodeDefinition(Opcode.Index)
 )
 
 fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
