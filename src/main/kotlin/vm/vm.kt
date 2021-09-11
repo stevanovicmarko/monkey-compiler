@@ -53,6 +53,28 @@ data class VM(
         }
     }
 
+    private fun buildArray(startIndex: Int, endIndex: Int): ObjectRepr {
+        val elements = mutableListOf<ObjectRepr>()
+        for (index in endIndex-1 downTo startIndex) {
+            elements.add(stack[index])
+        }
+        return ArrayRepr(elements)
+    }
+
+    private fun buildHash(startIndex: Int, endIndex: Int): ObjectRepr {
+        val pairs = mutableMapOf<HashKey, HashPair>()
+        for (index in startIndex until endIndex step 2) {
+            val key = stack[index]
+            val value = stack[index+1]
+            if (key is Hashable) {
+                pairs[key.hashKey()] = HashPair(key, value)
+            } else {
+                throw Exception("$key is not hashable")
+            }
+        }
+        return HashRepr(pairs)
+    }
+
     fun run() {
         var ip = 0
         while (ip < bytecode.instructions.size) {
@@ -117,6 +139,18 @@ data class VM(
                     val globalIndex = bytecode.instructions.extractUShortAt(ip)
                     ip += 2
                     push(globals[globalIndex])
+                }
+                Opcode.Array -> {
+                    val numberOfElements = bytecode.instructions.extractUShortAt(ip)
+                    ip += 2
+                    val arrayRepr = buildArray(stack.size - numberOfElements, stack.size)
+                    push(arrayRepr)
+                }
+                Opcode.Hash -> {
+                    val numberOfElements = bytecode.instructions.extractUShortAt(ip)
+                    ip += 2
+                    val hashRepr = buildHash(stack.size - numberOfElements, stack.size)
+                    push(hashRepr)
                 }
                 Opcode.NullOp -> push(NullRepr())
                 Opcode.Pop -> pop()

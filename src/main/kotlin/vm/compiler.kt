@@ -131,6 +131,18 @@ class Compiler {
                 val booleanOpCode = if (node.value) Opcode.True else Opcode.False
                 emit(booleanOpCode)
             }
+            is ArrayLiteral -> {
+                node.elements?.forEach { it -> compile(it) }
+                emit(Opcode.Array, node.elements?.size ?: 0)
+            }
+            is HashLiteral -> {
+                val sortedKeys = node.pairs.keys.sortedBy { it -> it.toString() }
+                sortedKeys.forEach {
+                    compile(it)
+                    compile(node.pairs[it])
+                }
+                emit(Opcode.Hash, node.pairs.size * 2)
+            }
             is LetStatement -> {
                 compile(node.value)
                 val value = node.name?.value

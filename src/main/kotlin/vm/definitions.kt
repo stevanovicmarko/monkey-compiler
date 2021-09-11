@@ -20,6 +20,8 @@ enum class Opcode(val code: UByte) {
     NullOp(0x0Eu),
     GetGlobal(0x0Fu),
     SetGlobal(0x10u),
+    Array(0x11u),
+    Hash(0x12u),
     Pop(0xFFu)
 }
 
@@ -43,7 +45,9 @@ var definitions: Map<Opcode, OpcodeDefinition> = mapOf(
     Opcode.NullOp to OpcodeDefinition(Opcode.NullOp),
     Opcode.Pop to OpcodeDefinition(Opcode.Pop),
     Opcode.GetGlobal to OpcodeDefinition(Opcode.GetGlobal, listOf(2)),
-    Opcode.SetGlobal to OpcodeDefinition(Opcode.SetGlobal, listOf(2))
+    Opcode.SetGlobal to OpcodeDefinition(Opcode.SetGlobal, listOf(2)),
+    Opcode.Array to OpcodeDefinition(Opcode.Array, listOf(2)),
+    Opcode.Hash to OpcodeDefinition(Opcode.Hash, listOf(2))
 )
 
 fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
@@ -82,6 +86,14 @@ data class Bytecode(val instructions: MutableList<UByte>, val constants: Mutable
             } else if (opcode == Opcode.SetGlobal) {
                 val setFrom = instructions.extractUShortAt(ip)
                 str.append(":: set variable at location = $setFrom")
+                ip += 2
+            } else if (opcode == Opcode.Array) {
+                val length = instructions.extractUShortAt(ip)
+                str.append(":: array, length = $length")
+                ip += 2
+            } else if (opcode == Opcode.Hash) {
+                val length = instructions.extractUShortAt(ip)
+                str.append(":: hash, position = $length")
                 ip += 2
             }
             ip++
