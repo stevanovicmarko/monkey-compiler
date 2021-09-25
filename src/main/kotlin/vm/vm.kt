@@ -204,6 +204,20 @@ data class VM(
                     val (index, left) = Pair(pop(), pop())
                     executeIndexExpression(left, index)
                 }
+                Opcode.Call -> {
+                    val fn = stack.last()
+                    if (fn !is CompiledFunction) {
+                        throw Exception("calling non-function")
+                    }
+                    val frame = Frame(fn)
+                    pushFrame(frame)
+                }
+                Opcode.ReturnValue -> {
+                    val returnValue = pop()
+                    popFrame()
+                    pop()
+                    push(returnValue)
+                }
                 Opcode.NullOp -> push(NullRepr())
                 Opcode.Pop -> pop()
             }

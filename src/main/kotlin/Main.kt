@@ -6,7 +6,10 @@ import vm.Compiler
 import vm.VM
 
 fun main() {
-    val input = "let x = 3;"
+    val input = """
+        let fivePlusTen = fn() { 5 + 10; };
+        fivePlusTen();
+        """
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
