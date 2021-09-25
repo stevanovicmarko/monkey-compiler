@@ -20,7 +20,8 @@ enum class DataNames {
     STRING,
     ARRAY,
     HASH,
-    ERROR
+    ERROR,
+    COMPILED_FUNCTION
 }
 
 data class IntegerRepr(val value: Int) : Hashable {
@@ -153,5 +154,15 @@ data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr?) : Object
 
     override fun inspect(): String {
         return "Builtin function: "
+    }
+}
+
+data class CompiledFunction(val instructions: List<UByte>): ObjectRepr {
+    override fun objectType(): ObjectType {
+        return DataNames.COMPILED_FUNCTION.toString()
+    }
+
+    override fun inspect(): String {
+        return "Compiled function"
     }
 }

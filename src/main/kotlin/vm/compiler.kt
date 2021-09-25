@@ -1,34 +1,43 @@
 package vm
 
+import objectrepr.CompiledFunction
 import objectrepr.IntegerRepr
 import objectrepr.ObjectRepr
 import objectrepr.StringRepr
 import parser.*
 
-typealias Instructions = List<UByte>
+data class CompilationScope(
+    val instructions: MutableList<UByte>,
+    var lastInstruction: EmittedInstruction?,
+    var previousInstruction: EmittedInstruction?
+)
+
 
 class Compiler {
-    val bytecode = Bytecode(mutableListOf(), mutableListOf())
-    private var lastInstruction: EmittedInstruction? = null
-    private var previousInstruction: EmittedInstruction? = null
+    val constants: MutableList<ObjectRepr> = mutableListOf()
+    private val mainScope = CompilationScope(mutableListOf(), null, null)
+    private val scopes = mutableListOf<CompilationScope>(mainScope)
+    private var scopeIndex = 0
     private val symbolTable = SymbolTable(mutableMapOf(), 0)
 
+    val currentInstructions get() = scopes[scopeIndex].instructions
+
     private fun addConstant(objectRepr: ObjectRepr): Int {
-        bytecode.constants.add(objectRepr)
-        return bytecode.constants.size - 1
+        constants.add(objectRepr)
+        return constants.size - 1
     }
 
     private fun addInstruction(instructions: List<UByte>): Int {
-        val position = bytecode.instructions.size
-        bytecode.instructions.addAll(instructions)
+        val position = currentInstructions.size
+        scopes[scopeIndex].instructions.addAll(instructions)
         return position
     }
 
     private fun setLastInstruction(opcode: Opcode, position: Int) {
-        val previous = lastInstruction
+        val previous = scopes[scopeIndex].lastInstruction
         val last = EmittedInstruction(opcode, position)
-        previousInstruction = previous
-        lastInstruction = last
+        scopes[scopeIndex].previousInstruction = previous
+        scopes[scopeIndex].lastInstruction = last
     }
 
     private fun emit(opcode: Opcode, vararg operands: Int): Int {
@@ -38,28 +47,51 @@ class Compiler {
         return position
     }
 
-    private fun lastInstructionIsPop(): Boolean {
-        return lastInstruction?.opcode == Opcode.Pop
+    private fun lastInstructionIs(opcode: Opcode): Boolean {
+        if (currentInstructions.size == 0) {
+            return false
+        }
+        return scopes[scopeIndex].lastInstruction?.opcode == opcode
     }
 
     private fun removeLastPop() {
-        bytecode.instructions.removeLast()
-        lastInstruction = previousInstruction
+        scopes[scopeIndex].instructions.removeLast()
+        scopes[scopeIndex].lastInstruction =  scopes[scopeIndex].previousInstruction
     }
 
     private fun replaceInstruction(position: Int, newInstruction: List<UByte>) {
         for (index in newInstruction.indices) {
-            bytecode.instructions[position + index] = newInstruction[index]
+            scopes[scopeIndex].instructions[position + index] = newInstruction[index]
         }
     }
 
     private fun changeOperand(operandPosition: Int, operand: Int) {
-        val bytecodeInstruction = bytecode.instructions[operandPosition]
+        val bytecodeInstruction = scopes[scopeIndex].instructions[operandPosition]
         val opcode = Opcode.values().find { it.code == bytecodeInstruction }
         if (opcode != null) {
             val newInstruction = makeBytecodeInstruction(opcode, operand)
             replaceInstruction(operandPosition, newInstruction)
         }
+    }
+
+    private fun enterScope() {
+        val scope = CompilationScope(mutableListOf(), null, null)
+        scopes.add(scope)
+        scopeIndex++
+    }
+
+    private fun leaveScope(): List<UByte> {
+        val instructions = currentInstructions
+        scopes.removeLast()
+        scopeIndex--
+        return instructions
+    }
+
+    private fun replaceLastPopWithReturn() {
+        val lastPos = scopes[scopeIndex].lastInstruction?.position
+            ?: throw Exception("Invalid position in the last instruction")
+        replaceInstruction(lastPos, makeBytecodeInstruction(Opcode.ReturnValue))
+        scopes[scopeIndex].lastInstruction?.opcode = Opcode.ReturnValue
     }
 
     fun compile(node: Node?) {
@@ -108,21 +140,21 @@ class Compiler {
                 val jumpNotTruthyPosition = emit(Opcode.JumpNotTruthy, codePatch)
                 compile(node.consequence)
 
-                if (lastInstructionIsPop()) {
+                if (lastInstructionIs(Opcode.Pop)) {
                     removeLastPop()
                 }
                 val jumpPosition = emit(Opcode.Jump, codePatch)
-                changeOperand(jumpNotTruthyPosition, bytecode.instructions.size)
+                changeOperand(jumpNotTruthyPosition, scopes[scopeIndex].instructions.size)
 
                 if (node.alternative == null) {
                     emit(Opcode.NullOp)
                 } else {
                     compile(node.alternative)
-                    if (lastInstructionIsPop()) {
+                    if (lastInstructionIs(Opcode.Pop)) {
                         removeLastPop()
                     }
                 }
-                changeOperand(jumpPosition, bytecode.instructions.size)
+                changeOperand(jumpPosition, scopes[scopeIndex].instructions.size)
             }
             is BlockStatement -> node.statements.forEach { compile(it) }
             is IntegerLiteral -> emit(Opcode.Constant, addConstant(IntegerRepr(node.value)))
@@ -132,11 +164,11 @@ class Compiler {
                 emit(booleanOpCode)
             }
             is ArrayLiteral -> {
-                node.elements?.forEach { it -> compile(it) }
+                node.elements?.forEach { compile(it) }
                 emit(Opcode.Array, node.elements?.size ?: 0)
             }
             is HashLiteral -> {
-                val sortedKeys = node.pairs.keys.sortedBy { it -> it.toString() }
+                val sortedKeys = node.pairs.keys.sortedBy { it.toString() }
                 sortedKeys.forEach {
                     compile(it)
                     compile(node.pairs[it])
@@ -159,6 +191,24 @@ class Compiler {
                 compile(node.left)
                 compile(node.index)
                 emit(Opcode.Index)
+            }
+            is FunctionLiteral -> {
+                enterScope()
+                compile(node.body)
+                if (lastInstructionIs(Opcode.Pop)) {
+                    replaceLastPopWithReturn()
+                }
+                val instructions = leaveScope()
+                val compiledFunction = CompiledFunction(instructions)
+                emit(Opcode.Constant, addConstant(compiledFunction))
+            }
+            is CallExpression -> {
+                compile(node.function)
+                emit(Opcode.Call)
+            }
+            is ReturnStatement -> {
+                compile(node.returnValue)
+                emit(Opcode.ReturnValue)
             }
             else -> throw Exception("Unhandled node type:: ${node!!::class.java}")
         }

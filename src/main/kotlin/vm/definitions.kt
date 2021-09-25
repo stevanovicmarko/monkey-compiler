@@ -22,7 +22,10 @@ enum class Opcode(val code: UByte) {
     SetGlobal(0x10u),
     Array(0x11u),
     Hash(0x12u),
-    Index(0x013u),
+    Index(0x13u),
+    Call(0x14u),
+    ReturnValue(0x15u),
+    Return(0x16u),
     Pop(0xFFu)
 }
 
@@ -49,7 +52,10 @@ var definitions: Map<Opcode, OpcodeDefinition> = mapOf(
     Opcode.SetGlobal to OpcodeDefinition(Opcode.SetGlobal, listOf(2)),
     Opcode.Array to OpcodeDefinition(Opcode.Array, listOf(2)),
     Opcode.Hash to OpcodeDefinition(Opcode.Hash, listOf(2)),
-    Opcode.Index to OpcodeDefinition(Opcode.Index)
+    Opcode.Index to OpcodeDefinition(Opcode.Index),
+    Opcode.Call to OpcodeDefinition(Opcode.Call),
+    Opcode.ReturnValue to OpcodeDefinition(Opcode.ReturnValue),
+    Opcode.Return to OpcodeDefinition(Opcode.Return)
 )
 
 fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
@@ -57,7 +63,7 @@ fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
     return (high * 256u).toInt() + low.toInt()
 }
 
-data class Bytecode(val instructions: MutableList<UByte>, val constants: MutableList<ObjectRepr>) {
+data class Bytecode(val instructions: MutableList<UByte>) {
 
     override fun toString(): String {
         val str = StringBuilder()
@@ -67,11 +73,9 @@ data class Bytecode(val instructions: MutableList<UByte>, val constants: Mutable
             val hexadecimalRepresentation = opcode?.code?.toString(16) ?: "Unknown opcode"
             str.append("$opcode :: 0x$hexadecimalRepresentation ")
 
-
             if (opcode == Opcode.Constant) {
                 val constIndex = instructions.extractUShortAt(ip)
-                val constantValue = constants[constIndex]
-                str.append(":: value = $constantValue")
+                str.append(":: constIndex = $constIndex")
                 ip += 2
             } else if (opcode == Opcode.JumpNotTruthy) {
                 val jumpTo = instructions.extractUShortAt(ip)
@@ -105,7 +109,7 @@ data class Bytecode(val instructions: MutableList<UByte>, val constants: Mutable
     }
 }
 
-data class EmittedInstruction(val opcode: Opcode, val position: Int)
+data class EmittedInstruction(var opcode: Opcode, val position: Int)
 
 fun Int.toBigEndianByteList(): List<UByte> {
     return listOf((this / 256).toUByte(), this.toUByte())

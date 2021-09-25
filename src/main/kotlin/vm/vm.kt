@@ -3,12 +3,20 @@ package vm
 import evaluator.isTruthy
 import objectrepr.*
 
+data class Frame(val compiledFunction: CompiledFunction, var ip: Int = -1) {
+    val instructions get() = compiledFunction.instructions.toMutableList()
+}
 
 data class VM(
-    val bytecode: Bytecode
+    val instructions: MutableList<UByte>,
+    val constants: MutableList<ObjectRepr>
 ) {
-    private var stack: MutableList<ObjectRepr> = mutableListOf()
+    private var stack = mutableListOf<ObjectRepr>()
     private var globals = Array<ObjectRepr>(65536) { NullRepr() }
+    private val mainFunc = CompiledFunction(instructions)
+    private val mainFrame = Frame(mainFunc)
+    private val frames = mutableListOf(mainFrame)
+    private var framesIndex: Int = 1
 
     private fun push(objectRepr: ObjectRepr) {
         stack.add(objectRepr)
@@ -16,6 +24,18 @@ data class VM(
 
     private fun pop(): ObjectRepr {
         return stack.removeLast()
+    }
+
+    private val currentFrame get() = frames[framesIndex-1]
+
+    private fun pushFrame(frame: Frame) {
+        frames.add(frame)
+        framesIndex++
+    }
+
+    private fun popFrame(): Frame {
+        framesIndex--
+        return frames[framesIndex]
     }
 
 
@@ -99,13 +119,16 @@ data class VM(
     }
 
     fun run() {
-        var ip = 0
-        while (ip < bytecode.instructions.size) {
-            when (val opcode = Opcode.values().find { it.code == bytecode.instructions[ip] }) {
+        while (currentFrame.ip < currentFrame.instructions.size - 1) {
+            currentFrame.ip++
+            var ip = currentFrame.ip
+            val instructions = currentFrame.instructions
+
+            when (val opcode = Opcode.values().find { it.code == instructions[ip] }) {
                 Opcode.Constant -> {
-                    val constIndex = bytecode.instructions.extractUShortAt(ip)
-                    ip += 2
-                    push(bytecode.constants[constIndex])
+                    val constIndex = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
+                    push(constants[constIndex])
                 }
                 Opcode.Add,
                 Opcode.Sub,
@@ -142,37 +165,37 @@ data class VM(
                     }
                 }
                 Opcode.Jump -> {
-                    val position = bytecode.instructions.extractUShortAt(ip)
-                    ip = position - 1
+                    val position = instructions.extractUShortAt(ip)
+                    currentFrame.ip = position - 1
                 }
                 Opcode.JumpNotTruthy -> {
-                    val position = bytecode.instructions.extractUShortAt(ip)
-                    ip += 2
+                    val position = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
                     val condition = pop()
                     if (!isTruthy(condition)) {
-                        ip = position - 1
+                        currentFrame.ip = position - 1
                     }
                 }
                 Opcode.SetGlobal -> {
-                    val globalIndex = bytecode.instructions.extractUShortAt(ip)
-                    ip += 2
+                    val globalIndex = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
                     globals[globalIndex] = pop()
                 }
                 Opcode.GetGlobal -> {
-                    val globalIndex = bytecode.instructions.extractUShortAt(ip)
-                    ip += 2
+                    val globalIndex = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
                     push(globals[globalIndex])
                 }
                 Opcode.Array -> {
-                    val numberOfElements = bytecode.instructions.extractUShortAt(ip)
-                    ip += 2
+                    val numberOfElements = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
                     val arrayRepr = buildArray(stack.size - numberOfElements, stack.size)
                     stack.subList(0, numberOfElements).clear()
                     push(arrayRepr)
                 }
                 Opcode.Hash -> {
-                    val numberOfElements = bytecode.instructions.extractUShortAt(ip)
-                    ip += 2
+                    val numberOfElements = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
                     val hashRepr = buildHash(stack.size - numberOfElements, stack.size)
                     stack.subList(0, numberOfElements).clear()
                     push(hashRepr)

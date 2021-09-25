@@ -6,13 +6,12 @@ import vm.Compiler
 import vm.VM
 
 fun main() {
-    val input = "[1, 2, 3][99]"
+    val input = "let x = 3;"
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
     val compiler = Compiler()
     compiler.compile(program)
-    println(compiler.bytecode)
-    val vm = VM(compiler.bytecode)
+    val vm  = VM(compiler.currentInstructions, compiler.constants)
     vm.run()
 }
