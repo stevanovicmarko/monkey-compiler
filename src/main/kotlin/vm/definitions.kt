@@ -1,6 +1,6 @@
 package vm
 
-import objectrepr.ObjectRepr
+import objectrepr.CompiledFunction
 
 enum class Opcode(val code: UByte) {
     Constant(0x00u),
@@ -63,53 +63,11 @@ fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
     return (high * 256u).toInt() + low.toInt()
 }
 
-data class Bytecode(val instructions: MutableList<UByte>) {
-
-    override fun toString(): String {
-        val str = StringBuilder()
-        var ip = 0
-        while (ip < instructions.size) {
-            val opcode = Opcode.values().find { it.code == instructions[ip] }
-            val hexadecimalRepresentation = opcode?.code?.toString(16) ?: "Unknown opcode"
-            str.append("$opcode :: 0x$hexadecimalRepresentation ")
-
-            if (opcode == Opcode.Constant) {
-                val constIndex = instructions.extractUShortAt(ip)
-                str.append(":: constIndex = $constIndex")
-                ip += 2
-            } else if (opcode == Opcode.JumpNotTruthy) {
-                val jumpTo = instructions.extractUShortAt(ip)
-                str.append(":: jumpLocation = $jumpTo")
-                ip += 2
-            } else if (opcode == Opcode.Jump) {
-                val jumpTo = instructions.extractUShortAt(ip)
-                str.append(":: jumpLocation = $jumpTo")
-                ip += 2
-            } else if (opcode == Opcode.GetGlobal) {
-                val setTo = instructions.extractUShortAt(ip)
-                str.append(":: get variable from location = $setTo")
-                ip += 2
-            } else if (opcode == Opcode.SetGlobal) {
-                val setFrom = instructions.extractUShortAt(ip)
-                str.append(":: set variable at location = $setFrom")
-                ip += 2
-            } else if (opcode == Opcode.Array) {
-                val length = instructions.extractUShortAt(ip)
-                str.append(":: array, length = $length")
-                ip += 2
-            } else if (opcode == Opcode.Hash) {
-                val length = instructions.extractUShortAt(ip)
-                str.append(":: hash, position = $length")
-                ip += 2
-            }
-            ip++
-            str.append("\n")
-        }
-        return str.toString()
-    }
-}
-
 data class EmittedInstruction(var opcode: Opcode, val position: Int)
+
+data class Frame(val compiledFunction: CompiledFunction, var ip: Int = -1) {
+    val instructions get() = compiledFunction.instructions.toMutableList()
+}
 
 fun Int.toBigEndianByteList(): List<UByte> {
     return listOf((this / 256).toUByte(), this.toUByte())
@@ -130,23 +88,4 @@ fun makeBytecodeInstruction(opcode: Opcode, vararg operands: Int): List<UByte> {
         }
     }
     return byteCodeInstruction
-}
-
-fun readOperands(opcodeDefinition: OpcodeDefinition, instructions: List<UByte>): Pair<List<UShort>, Int> {
-    val operands = mutableListOf<UShort>()
-    var offset = 0
-
-    if (opcodeDefinition.operandWidths == null) {
-        return Pair(operands, offset)
-    }
-
-    for (width in opcodeDefinition.operandWidths) {
-        if (width == 2) {
-            // Convert instruction Byte slice to Int starting at offset
-            val operand = instructions.slice(offset..offset + 1)
-            operands.add((operand[0] * 256u + operand[1]).toUShort())
-        }
-        offset += width
-    }
-    return Pair(operands, offset)
 }

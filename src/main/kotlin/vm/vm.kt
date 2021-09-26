@@ -3,9 +3,6 @@ package vm
 import evaluator.isTruthy
 import objectrepr.*
 
-data class Frame(val compiledFunction: CompiledFunction, var ip: Int = -1) {
-    val instructions get() = compiledFunction.instructions.toMutableList()
-}
 
 data class VM(
     val instructions: MutableList<UByte>,
@@ -14,8 +11,7 @@ data class VM(
     private var stack = mutableListOf<ObjectRepr>()
     private var globals = Array<ObjectRepr>(65536) { NullRepr() }
     private val mainFunc = CompiledFunction(instructions)
-    private val mainFrame = Frame(mainFunc)
-    private val frames = mutableListOf(mainFrame)
+    private val frames: MutableList<Frame> = MutableList(1024){ Frame(mainFunc) }
     private var framesIndex: Int = 1
 
     private fun push(objectRepr: ObjectRepr) {
@@ -29,7 +25,7 @@ data class VM(
     private val currentFrame get() = frames[framesIndex-1]
 
     private fun pushFrame(frame: Frame) {
-        frames.add(frame)
+        frames[framesIndex] = frame
         framesIndex++
     }
 
@@ -37,7 +33,6 @@ data class VM(
         framesIndex--
         return frames[framesIndex]
     }
-
 
     private fun executeBinaryOperation(opcode: Opcode) {
         val (left, right) = Pair(pop(), pop())
@@ -209,14 +204,18 @@ data class VM(
                     if (fn !is CompiledFunction) {
                         throw Exception("calling non-function")
                     }
-                    val frame = Frame(fn)
-                    pushFrame(frame)
+                    pushFrame(Frame(fn))
                 }
                 Opcode.ReturnValue -> {
                     val returnValue = pop()
                     popFrame()
                     pop()
                     push(returnValue)
+                }
+                Opcode.Return -> {
+                    popFrame()
+                    pop()
+                    push(NullRepr())
                 }
                 Opcode.NullOp -> push(NullRepr())
                 Opcode.Pop -> pop()

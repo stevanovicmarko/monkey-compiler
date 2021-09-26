@@ -198,6 +198,9 @@ class Compiler {
                 if (lastInstructionIs(Opcode.Pop)) {
                     replaceLastPopWithReturn()
                 }
+                if (!lastInstructionIs(Opcode.ReturnValue)) {
+                    emit(Opcode.Return)
+                }
                 val instructions = leaveScope()
                 val compiledFunction = CompiledFunction(instructions)
                 emit(Opcode.Constant, addConstant(compiledFunction))

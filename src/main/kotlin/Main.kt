@@ -7,8 +7,9 @@ import vm.VM
 
 fun main() {
     val input = """
-        let fivePlusTen = fn() { 5 + 10; };
-        fivePlusTen();
+        let returnsOne = fn() { 1; };
+        let returnsOneReturner = fn() { returnsOne; };
+        returnsOneReturner()();
         """
     val lexer = Lexer(input)
     val parser = Parser(lexer)
