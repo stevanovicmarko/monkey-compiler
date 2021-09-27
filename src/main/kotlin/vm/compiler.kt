@@ -6,13 +6,6 @@ import objectrepr.ObjectRepr
 import objectrepr.StringRepr
 import parser.*
 
-data class CompilationScope(
-    val instructions: MutableList<UByte>,
-    var lastInstruction: EmittedInstruction?,
-    var previousInstruction: EmittedInstruction?
-)
-
-
 class Compiler {
     val constants: MutableList<ObjectRepr> = mutableListOf()
     private val mainScope = CompilationScope(mutableListOf(), null, null)

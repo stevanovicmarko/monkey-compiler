@@ -14,4 +14,3 @@ data class SymbolTable(val store: MutableMap<String, Symbol>, var numDefinitions
         return symbol
     }
 }
-

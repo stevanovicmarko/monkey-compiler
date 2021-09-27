@@ -3,15 +3,17 @@ package vm
 import evaluator.isTruthy
 import objectrepr.*
 
+const val MAX_STACK_SIZE = 1024
+const val MAX_NUMBER_OF_GLOBAL_VARS = 65536
 
 data class VM(
     val instructions: MutableList<UByte>,
     val constants: MutableList<ObjectRepr>
 ) {
     private var stack = mutableListOf<ObjectRepr>()
-    private var globals = Array<ObjectRepr>(65536) { NullRepr() }
+    private var globals = Array<ObjectRepr>(MAX_NUMBER_OF_GLOBAL_VARS) { NullRepr() }
     private val mainFunc = CompiledFunction(instructions)
-    private val frames: MutableList<Frame> = MutableList(1024){ Frame(mainFunc) }
+    private val frames: MutableList<Frame> = MutableList(MAX_STACK_SIZE){ Frame(mainFunc) }
     private var framesIndex: Int = 1
 
     private fun push(objectRepr: ObjectRepr) {

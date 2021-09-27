@@ -51,6 +51,12 @@ fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
 
 data class EmittedInstruction(var opcode: Opcode, val position: Int)
 
+data class CompilationScope(
+    val instructions: MutableList<UByte>,
+    var lastInstruction: EmittedInstruction?,
+    var previousInstruction: EmittedInstruction?
+)
+
 data class Frame(val compiledFunction: CompiledFunction, var ip: Int = -1) {
     val instructions get() = compiledFunction.instructions.toMutableList()
 }
