@@ -26,36 +26,22 @@ enum class Opcode(val code: UByte) {
     Call(0x14u),
     ReturnValue(0x15u),
     Return(0x16u),
+    GetLocal(0x17u),
+    SetLocal(0x18u),
     Pop(0xFFu)
 }
 
-data class OpcodeDefinition(val name: Opcode, val operandWidths: List<Int>? = null)
-
-var definitions: Map<Opcode, OpcodeDefinition> = mapOf(
-    Opcode.Constant to OpcodeDefinition(Opcode.Constant, listOf(2)),
-    Opcode.Add to OpcodeDefinition(Opcode.Add),
-    Opcode.Sub to OpcodeDefinition(Opcode.Sub),
-    Opcode.Mul to OpcodeDefinition(Opcode.Mul),
-    Opcode.Div to OpcodeDefinition(Opcode.Div),
-    Opcode.True to OpcodeDefinition(Opcode.True),
-    Opcode.False to OpcodeDefinition(Opcode.False),
-    Opcode.Equal to OpcodeDefinition(Opcode.Equal),
-    Opcode.NotEqual to OpcodeDefinition(Opcode.NotEqual),
-    Opcode.GreaterThan to OpcodeDefinition(Opcode.GreaterThan),
-    Opcode.Minus to OpcodeDefinition(Opcode.Minus),
-    Opcode.Bang to OpcodeDefinition(Opcode.Bang),
-    Opcode.JumpNotTruthy to OpcodeDefinition(Opcode.JumpNotTruthy, listOf(2)),
-    Opcode.Jump to OpcodeDefinition(Opcode.Jump, listOf(2)),
-    Opcode.NullOp to OpcodeDefinition(Opcode.NullOp),
-    Opcode.Pop to OpcodeDefinition(Opcode.Pop),
-    Opcode.GetGlobal to OpcodeDefinition(Opcode.GetGlobal, listOf(2)),
-    Opcode.SetGlobal to OpcodeDefinition(Opcode.SetGlobal, listOf(2)),
-    Opcode.Array to OpcodeDefinition(Opcode.Array, listOf(2)),
-    Opcode.Hash to OpcodeDefinition(Opcode.Hash, listOf(2)),
-    Opcode.Index to OpcodeDefinition(Opcode.Index),
-    Opcode.Call to OpcodeDefinition(Opcode.Call),
-    Opcode.ReturnValue to OpcodeDefinition(Opcode.ReturnValue),
-    Opcode.Return to OpcodeDefinition(Opcode.Return)
+val definitions: Map<Opcode, Int> = mapOf(
+    Opcode.Constant to 2,
+    Opcode.Add to 0,
+    Opcode.JumpNotTruthy to 2,
+    Opcode.Jump to 2,
+    Opcode.GetGlobal to 2,
+    Opcode.SetGlobal to 2,
+    Opcode.Array to 2,
+    Opcode.Hash to 2,
+    Opcode.GetLocal to 1,
+    Opcode.SetLocal to 1,
 )
 
 fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
@@ -74,17 +60,15 @@ fun Int.toBigEndianByteList(): List<UByte> {
 }
 
 fun makeBytecodeInstruction(opcode: Opcode, vararg operands: Int): List<UByte> {
-    val definition = definitions[opcode] ?: return listOf()
+    val definition = definitions[opcode]
     val byteCodeInstruction = mutableListOf(opcode.code)
-    var offset = 1
 
-    for ((index, operand) in operands.withIndex()) {
-        val width = definition.operandWidths?.get(index)
-        if (width == 2) {
-            byteCodeInstruction.addAll(operand.toBigEndianByteList())
-        }
-        if (width != null) {
-            offset += width
+    for (operand in operands) {
+        // Make sure this change works
+        when (definition) {
+            1 -> byteCodeInstruction.add(operand.toUByte())
+            2 -> byteCodeInstruction.addAll(operand.toBigEndianByteList())
+            null -> throw Exception("$opcode should have no operands")
         }
     }
     return byteCodeInstruction
