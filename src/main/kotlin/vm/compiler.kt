@@ -170,15 +170,19 @@ class Compiler {
             }
             is LetStatement -> {
                 compile(node.value)
-                val value = node.name?.value
-                if (value != null) {
-                    val symbol = symbolTable.define(value)
+                val identifierName: String? = node.name?.value
+                if (identifierName != null) {
+                    val symbol = symbolTable.define(identifierName)
                     emit(Opcode.SetGlobal, symbol.index)
                 }
             }
             is Identifier -> {
-                val symbol = symbolTable.store.getValue(node.value)
-                emit(Opcode.GetGlobal, symbol.index)
+                val symbol = symbolTable.resolve(node.value)
+                if (symbol != null) {
+                    emit(Opcode.GetGlobal, symbol.index)
+                } else {
+                    throw Exception("Unknown symbol for ${node.value}")
+                }
             }
             is IndexExpression -> {
                 compile(node.left)
