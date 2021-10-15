@@ -11,7 +11,7 @@ class Compiler {
     private val mainScope = CompilationScope(mutableListOf(), null, null)
     private val scopes = mutableListOf<CompilationScope>(mainScope)
     private var scopeIndex = 0
-    private val symbolTable = SymbolTable(mutableMapOf(), 0)
+    private var symbolTable = SymbolTable(mutableMapOf(), 0)
 
     val currentInstructions get() = scopes[scopeIndex].instructions
 
@@ -49,7 +49,7 @@ class Compiler {
 
     private fun removeLastPop() {
         scopes[scopeIndex].instructions.removeLast()
-        scopes[scopeIndex].lastInstruction =  scopes[scopeIndex].previousInstruction
+        scopes[scopeIndex].lastInstruction = scopes[scopeIndex].previousInstruction
     }
 
     private fun replaceInstruction(position: Int, newInstruction: List<UByte>) {
@@ -71,12 +71,14 @@ class Compiler {
         val scope = CompilationScope(mutableListOf(), null, null)
         scopes.add(scope)
         scopeIndex++
+        symbolTable = SymbolTable(mutableMapOf(), 0, symbolTable)
     }
 
     private fun leaveScope(): List<UByte> {
         val instructions = currentInstructions
         scopes.removeLast()
         scopeIndex--
+        symbolTable = symbolTable.outerSymbolTable ?: throw Exception("No outer symbol table")
         return instructions
     }
 
@@ -170,18 +172,18 @@ class Compiler {
             }
             is LetStatement -> {
                 compile(node.value)
-                val identifierName: String? = node.name?.value
-                if (identifierName != null) {
-                    val symbol = symbolTable.define(identifierName)
-                    emit(Opcode.SetGlobal, symbol.index)
+                val identifierName = node.name?.value ?: throw Exception("Identifier for ${node.name} not found.")
+                val symbol = symbolTable.define(identifierName)
+                when (symbol.scope) {
+                    SymbolScope.GLOBAL_SCOPE -> emit(Opcode.SetGlobal, symbol.index)
+                    SymbolScope.LOCAL_SCOPE -> emit(Opcode.SetLocal, symbol.index)
                 }
             }
             is Identifier -> {
-                val symbol = symbolTable.resolve(node.value)
-                if (symbol != null) {
-                    emit(Opcode.GetGlobal, symbol.index)
-                } else {
-                    throw Exception("Unknown symbol for ${node.value}")
+                val symbol = symbolTable.resolve(node.value) ?: throw Exception("Unknown symbol for ${node.value}")
+                when (symbol.scope) {
+                    SymbolScope.GLOBAL_SCOPE -> emit(Opcode.SetGlobal, symbol.index)
+                    SymbolScope.LOCAL_SCOPE -> emit(Opcode.SetLocal, symbol.index)
                 }
             }
             is IndexExpression -> {
