@@ -38,10 +38,10 @@ val definitions: Map<Opcode, Int> = mapOf(
     Opcode.Jump to 2,
     Opcode.GetGlobal to 2,
     Opcode.SetGlobal to 2,
+    Opcode.GetLocal to 2,
+    Opcode.SetLocal to 2,
     Opcode.Array to 2,
     Opcode.Hash to 2,
-    Opcode.GetLocal to 1,
-    Opcode.SetLocal to 1,
 )
 
 fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
@@ -57,7 +57,7 @@ data class CompilationScope(
     var previousInstruction: EmittedInstruction?
 )
 
-data class Frame(val compiledFunction: CompiledFunction, var ip: Int = -1) {
+data class Frame(val compiledFunction: CompiledFunction, var ip: Int = -1, var basePointer: Int = 0) {
     val instructions get() = compiledFunction.instructions.toMutableList()
 }
 

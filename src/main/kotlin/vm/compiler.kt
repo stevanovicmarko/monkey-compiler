@@ -9,7 +9,7 @@ import parser.*
 class Compiler {
     val constants: MutableList<ObjectRepr> = mutableListOf()
     private val mainScope = CompilationScope(mutableListOf(), null, null)
-    private val scopes = mutableListOf<CompilationScope>(mainScope)
+    private val scopes = mutableListOf(mainScope)
     private var scopeIndex = 0
     private var symbolTable = SymbolTable(mutableMapOf(), 0)
 
@@ -182,8 +182,8 @@ class Compiler {
             is Identifier -> {
                 val symbol = symbolTable.resolve(node.value) ?: throw Exception("Unknown symbol for ${node.value}")
                 when (symbol.scope) {
-                    SymbolScope.GLOBAL_SCOPE -> emit(Opcode.SetGlobal, symbol.index)
-                    SymbolScope.LOCAL_SCOPE -> emit(Opcode.SetLocal, symbol.index)
+                    SymbolScope.GLOBAL_SCOPE -> emit(Opcode.GetGlobal, symbol.index)
+                    SymbolScope.LOCAL_SCOPE -> emit(Opcode.GetLocal, symbol.index)
                 }
             }
             is IndexExpression -> {
@@ -200,8 +200,9 @@ class Compiler {
                 if (!lastInstructionIs(Opcode.ReturnValue)) {
                     emit(Opcode.Return)
                 }
+                val numDefinitions = symbolTable.numDefinitions
                 val instructions = leaveScope()
-                val compiledFunction = CompiledFunction(instructions)
+                val compiledFunction = CompiledFunction(instructions, numDefinitions)
                 emit(Opcode.Constant, addConstant(compiledFunction))
             }
             is CallExpression -> {

@@ -13,6 +13,7 @@ data class VM(
     private var stack = mutableListOf<ObjectRepr>()
     private var globals = Array<ObjectRepr>(MAX_NUMBER_OF_GLOBAL_VARS) { NullRepr() }
     private val mainFunc = CompiledFunction(instructions)
+    // TODO: Get rid of this mutable list and use array instead
     private val frames: MutableList<Frame> = MutableList(MAX_STACK_SIZE){ Frame(mainFunc) }
     private var framesIndex: Int = 1
 
@@ -37,7 +38,7 @@ data class VM(
     }
 
     private fun executeBinaryOperation(opcode: Opcode) {
-        val (left, right) = Pair(pop(), pop())
+        val (right, left) = Pair(pop(), pop())
         if (left is IntegerRepr && right is IntegerRepr) {
             val result = when (opcode) {
                 Opcode.Add -> left.value + right.value
@@ -202,21 +203,32 @@ data class VM(
                     executeIndexExpression(left, index)
                 }
                 Opcode.Call -> {
-                    val fn = stack.last()
-                    if (fn !is CompiledFunction) {
-                        throw Exception("calling non-function")
-                    }
-                    pushFrame(Frame(fn))
+                    val fn = stack.last() as? CompiledFunction ?: throw Exception("calling non-function")
+                    val frame = Frame(fn, -1, stack.size)
+                    pushFrame(frame)
+                    val stackSlots = MutableList(frame.basePointer + fn.numLocals - 1) { NullRepr() }
+                    stack.addAll(stackSlots)
+                }
+                Opcode.SetLocal -> {
+                    val localIndex = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
+                    val x = pop()
+                    stack[currentFrame.basePointer + localIndex] = x
+                }
+                Opcode.GetLocal -> {
+                    val localIndex = instructions.extractUShortAt(ip)
+                    currentFrame.ip += 2
+                    push(stack[currentFrame.basePointer + localIndex])
                 }
                 Opcode.ReturnValue -> {
                     val returnValue = pop()
-                    popFrame()
-                    pop()
+                    val frame = popFrame()
+                    stack = stack.subList(0, frame.basePointer - 1)
                     push(returnValue)
                 }
                 Opcode.Return -> {
-                    popFrame()
-                    pop()
+                    val frame = popFrame()
+                    stack = stack.subList(0, frame.basePointer - 1)
                     push(NullRepr())
                 }
                 Opcode.NullOp -> push(NullRepr())

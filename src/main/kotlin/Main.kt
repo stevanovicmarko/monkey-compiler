@@ -7,9 +7,16 @@ import vm.VM
 
 fun main() {
     val input = """
-        let returnsOne = fn() { 1; };
-        let returnsOneReturner = fn() { returnsOne; };
-        returnsOneReturner()();
+        let globalSeed = 50;
+        let minusOne = fn() {
+            let num = 1;
+            globalSeed - num;
+        }
+        let minusTwo = fn() {
+            let num = 2;
+            globalSeed - num;
+        }
+        minusOne() + minusOne()
         """
     val lexer = Lexer(input)
     val parser = Parser(lexer)

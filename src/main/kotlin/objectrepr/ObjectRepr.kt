@@ -157,7 +157,7 @@ data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr?) : Object
     }
 }
 
-data class CompiledFunction(val instructions: List<UByte>): ObjectRepr {
+data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 0): ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.COMPILED_FUNCTION.toString()
     }
