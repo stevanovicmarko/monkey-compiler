@@ -190,7 +190,8 @@ data class VM(
                 Opcode.Call -> {
                     val numOfArguments = currentFrame.instructions[currentFrame.ip + 1].toInt()
                     currentFrame.ip += 1
-                    val fn = stack[stack.size - 1 - numOfArguments] as? CompiledFunction ?: throw Exception("calling non-function: ${stack.last()}")
+                    val objectRepr = stack[stack.size - 1 - numOfArguments]
+                    val fn = objectRepr as? CompiledFunction ?: throw Exception("calling non-function: ${objectRepr}")
                     val frame = Frame(fn, -1, stack.size - numOfArguments)
                     frames.add(frame)
                     // TODO: stack slotting should be removed at some point
