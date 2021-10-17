@@ -46,10 +46,10 @@ class Lexer(inputString: String) {
         tokens.add(Token(TokenType.INT, input.substring(digitStartPosition, lexPosition)))
     }
 
-    private fun readString() {
+    private fun readString(ch: Char) {
         lexPosition++
         val stringStartPosition = lexPosition
-        while (lexPosition < input.length && input.substring(lexPosition).first() != '"') {
+        while (lexPosition < input.length && input.substring(lexPosition).first() != ch) {
             lexPosition++
         }
         tokens.add(Token(TokenType.STRING, input.substring(stringStartPosition, lexPosition)))
@@ -132,8 +132,8 @@ class Lexer(inputString: String) {
             ':' -> {
                 handleSingleToken(TokenType.COLON)
             }
-            '"' -> {
-                readString()
+            '"', '\'' -> {
+                readString(currentCharacter)
             }
             '\n' -> lexPosition++
             else -> {

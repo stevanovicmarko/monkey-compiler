@@ -7,22 +7,22 @@ import vm.VM
 
 fun main() {
     val input = """
-        let globalSeed = 50;
-        let minusOne = fn() {
-            let num = 1;
-            globalSeed - num;
-        }
-        let minusTwo = fn() {
-            let num = 2;
-            globalSeed - num;
-        }
-        minusOne() + minusOne()
+        let globalNum = 10;
+        let sum = fn(a, b) {
+            let c = a + b;
+            c + globalNum;
+        };
+        let outer = fn() {
+            sum(1, 2) + sum(3, 4) + globalNum;
+            };
+        outer() + globalNum;
         """
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
     val compiler = Compiler()
     compiler.compile(program)
+    println(compiler.toString())
     val vm  = VM(compiler.currentInstructions, compiler.constants)
     vm.run()
 }

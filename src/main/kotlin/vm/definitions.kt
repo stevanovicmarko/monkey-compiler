@@ -31,20 +31,23 @@ enum class Opcode(val code: UByte) {
     Pop(0xFFu)
 }
 
-val definitions: Map<Opcode, Int> = mapOf(
-    Opcode.Constant to 2,
-    Opcode.Add to 0,
-    Opcode.JumpNotTruthy to 2,
-    Opcode.Jump to 2,
-    Opcode.GetGlobal to 2,
-    Opcode.SetGlobal to 2,
-    Opcode.GetLocal to 2,
-    Opcode.SetLocal to 2,
-    Opcode.Array to 2,
-    Opcode.Hash to 2,
+// This map represents how many bytes can be used for a single instruction.
+// e.g. max number of constants is 65535, so Opcode.Constant will use two bytes
+// max number of Call arguments is 255, so Opcode.Call will use a single byte
+val definitions: Map<Opcode, UByte> = mapOf(
+    Opcode.Constant to 2u,
+    Opcode.JumpNotTruthy to 2u,
+    Opcode.Jump to 2u,
+    Opcode.GetGlobal to 2u,
+    Opcode.SetGlobal to 2u,
+    Opcode.GetLocal to 2u,
+    Opcode.SetLocal to 2u,
+    Opcode.Array to 2u,
+    Opcode.Hash to 2u,
+    Opcode.Call to 1u
 )
 
-fun MutableList<UByte>.extractUShortAt(startingPoint: Int): Int {
+fun List<UByte>.extractUShortAt(startingPoint: Int): Int {
     val (high, low) = slice(startingPoint + 1..startingPoint + 2)
     return (high * 256u).toInt() + low.toInt()
 }
@@ -68,12 +71,12 @@ fun Int.toBigEndianByteList(): List<UByte> {
 fun makeBytecodeInstruction(opcode: Opcode, vararg operands: Int): List<UByte> {
     val definition = definitions[opcode]
     val byteCodeInstruction = mutableListOf(opcode.code)
-
+    val singleByteCapacity: UByte = 1u
+    val twoByteCapacity: UByte = 2u
     for (operand in operands) {
-        // Make sure this change works
         when (definition) {
-            1 -> byteCodeInstruction.add(operand.toUByte())
-            2 -> byteCodeInstruction.addAll(operand.toBigEndianByteList())
+            singleByteCapacity -> byteCodeInstruction.add(operand.toUByte())
+            twoByteCapacity -> byteCodeInstruction.addAll(operand.toBigEndianByteList())
             null -> throw Exception("$opcode should have no operands")
         }
     }

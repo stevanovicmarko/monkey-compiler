@@ -193,6 +193,11 @@ class Compiler {
             }
             is FunctionLiteral -> {
                 enterScope()
+
+                node.parameters?.forEach {
+                    symbolTable.define(it.value)
+                }
+
                 compile(node.body)
                 if (lastInstructionIs(Opcode.Pop)) {
                     replaceLastPopWithReturn()
@@ -207,7 +212,8 @@ class Compiler {
             }
             is CallExpression -> {
                 compile(node.function)
-                emit(Opcode.Call)
+                node.arguments?.forEach { compile(it) }
+                emit(Opcode.Call, node.arguments?.size ?: 0)
             }
             is ReturnStatement -> {
                 compile(node.returnValue)
@@ -215,5 +221,39 @@ class Compiler {
             }
             else -> throw Exception("Unhandled node type:: ${node!!::class.java}")
         }
+    }
+
+    override fun toString(): String {
+        val stringBuilder = StringBuilder("INSTRUCTIONS:\n")
+        for (scope in scopes) {
+            var idx = 0
+            while (idx < scope.instructions.size) {
+                val opcode =
+                    Opcode.values().find { it.code == scope.instructions[idx] } ?: throw Exception("Unknown Opcode")
+                val definition = definitions[opcode]
+
+                val singleByteCapacity: UByte = 1u
+                val twoByteCapacity: UByte = 2u
+                val instruction = when (definition) {
+                    singleByteCapacity ->
+                        scope.instructions[idx + 1].toInt().also {
+                            idx++
+                        }
+                    twoByteCapacity ->
+                        scope.instructions[idx + 1].toInt() * 256 + scope.instructions[idx + 2].toInt().also {
+                            idx += 2
+                        }
+
+                    else -> null
+                }
+                stringBuilder.append("$opcode, ${instruction?.toString()}\n")
+                idx++
+            }
+        }
+        stringBuilder.append("\nCONSTANTS:\n")
+        for (c in constants) {
+            stringBuilder.append("$c\n")
+        }
+        return stringBuilder.toString()
     }
 }
