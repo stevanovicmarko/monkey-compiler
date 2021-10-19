@@ -193,6 +193,9 @@ data class VM(
                     val objectRepr = stack[stack.size - 1 - numOfArguments]
                     val fn = objectRepr as? CompiledFunction ?: throw Exception("calling non-function: ${objectRepr}")
                     val frame = Frame(fn, -1, stack.size - numOfArguments)
+                    if (numOfArguments != fn.numParameters) {
+                        throw Exception("Function call ${fn.toString()}: Invalid number of parameters, expected ${fn.numParameters}, got $numOfArguments")
+                    }
                     frames.add(frame)
                     // TODO: stack slotting should be removed at some point
                     val stackSlots = MutableList(frame.basePointer + fn.numLocals - 1) { NullRepr() }

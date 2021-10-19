@@ -157,7 +157,7 @@ data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr?) : Object
     }
 }
 
-data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 0): ObjectRepr {
+data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 0, val numParameters: Int = 0): ObjectRepr {
     override fun objectType(): ObjectType {
         return DataNames.COMPILED_FUNCTION.toString()
     }
@@ -165,4 +165,8 @@ data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 
     override fun inspect(): String {
         return "Compiled function"
     }
+    // TODO: Add printing of instructions as Compiler's toString() method
+    //    override fun toString(): String {
+    //
+    //    }
 }

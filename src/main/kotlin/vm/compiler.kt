@@ -207,7 +207,11 @@ class Compiler {
                 }
                 val numDefinitions = symbolTable.numDefinitions
                 val instructions = leaveScope()
-                val compiledFunction = CompiledFunction(instructions, numDefinitions)
+                val compiledFunction = CompiledFunction(
+                    instructions,
+                    numDefinitions,
+                    node.parameters?.size ?: throw Exception("Node parameters is not a list: ${node.parameters}")
+                )
                 emit(Opcode.Constant, addConstant(compiledFunction))
             }
             is CallExpression -> {
