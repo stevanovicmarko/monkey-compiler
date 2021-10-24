@@ -2,7 +2,8 @@ package vm
 
 enum class SymbolScope {
     GLOBAL_SCOPE,
-    LOCAL_SCOPE
+    LOCAL_SCOPE,
+    BUILTIN_SCOPE
 }
 
 data class Symbol(val name: String, val scope: SymbolScope, val index: Int)
@@ -18,6 +19,12 @@ data class SymbolTable(val store: MutableMap<String, Symbol>, var numDefinitions
         val symbol = Symbol(name, scope, numDefinitions)
         store[name] = symbol
         numDefinitions++
+        return symbol
+    }
+
+    fun defineBuiltin(index:Int, name: String): Symbol {
+        val symbol = Symbol(name, scope = SymbolScope.BUILTIN_SCOPE, index)
+        store[name] = symbol
         return symbol
     }
 

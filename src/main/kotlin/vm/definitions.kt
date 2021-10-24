@@ -28,6 +28,7 @@ enum class Opcode(val code: UByte) {
     Return(0x16u),
     GetLocal(0x17u),
     SetLocal(0x18u),
+    GetBuiltin(0x19u),
     Pop(0xFFu)
 }
 
@@ -44,7 +45,8 @@ val definitions: Map<Opcode, UByte> = mapOf(
     Opcode.SetLocal to 2u,
     Opcode.Array to 2u,
     Opcode.Hash to 2u,
-    Opcode.Call to 1u
+    Opcode.Call to 1u,
+    Opcode.GetBuiltin to 1u
 )
 
 fun List<UByte>.extractUShortAt(startingPoint: Int): Int {

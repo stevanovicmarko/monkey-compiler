@@ -140,7 +140,8 @@ data class VM(
                     stack.add(BooleanRepr(computed))
                 }
                 Opcode.Minus -> {
-                    val operand = stack.last() as? IntegerRepr ?: throw Exception("Operand is not an integer: ${stack.last()}")
+                    val operand =
+                        stack.last() as? IntegerRepr ?: throw Exception("Operand is not an integer: ${stack.last()}")
                     stack.removeLast()
                     stack.add(IntegerRepr(-operand.value))
                 }
@@ -173,7 +174,7 @@ data class VM(
                     val numberOfElements = currentFrame.instructions.extractUShortAt(currentFrame.ip)
                     currentFrame.ip += 2
                     val arrayRepr = buildArray(stack.size - numberOfElements, stack.size)
-                    stack.subList(0, numberOfElements).clear()
+                    stack = stack.subList(0, stack.size - numberOfElements)
                     stack.add(arrayRepr)
                 }
                 Opcode.Hash -> {
@@ -190,21 +191,38 @@ data class VM(
                 Opcode.Call -> {
                     val numOfArguments = currentFrame.instructions[currentFrame.ip + 1].toInt()
                     currentFrame.ip += 1
-                    val objectRepr = stack[stack.size - 1 - numOfArguments]
-                    val fn = objectRepr as? CompiledFunction ?: throw Exception("calling non-function: ${objectRepr}")
-                    val frame = Frame(fn, -1, stack.size - numOfArguments)
-                    if (numOfArguments != fn.numParameters) {
-                        throw Exception("Function call ${fn.toString()}: Invalid number of parameters, expected ${fn.numParameters}, got $numOfArguments")
+                    val callee = stack[stack.size - 1 - numOfArguments]
+
+                    when (callee) {
+                        is CompiledFunction -> {
+                            val frame = Frame(callee, -1, stack.size - numOfArguments)
+                            if (numOfArguments != callee.numParameters) {
+                                throw Exception("Function call ${callee.toString()}: Invalid number of parameters, expected ${callee.numParameters}, got $numOfArguments")
+                            }
+                            frames.add(frame)
+                            // TODO: stack slotting should be removed at some point
+                            val stackSlots = MutableList(frame.basePointer + callee.numLocals - 1) { NullRepr() }
+                            stack.addAll(stackSlots)
+                        }
+                        is BuiltinRepr -> {
+                            val args = stack.subList(stack.size - numOfArguments, stack.size)
+                            val result = callee.fn(*args.toTypedArray())
+                            stack = stack.subList(0, stack.size - numOfArguments -1)
+                            stack.add(result ?: NullRepr())
+                        }
+                        else -> throw Exception("calling non-function: $callee")
                     }
-                    frames.add(frame)
-                    // TODO: stack slotting should be removed at some point
-                    val stackSlots = MutableList(frame.basePointer + fn.numLocals - 1) { NullRepr() }
-                    stack.addAll(stackSlots)
                 }
                 Opcode.SetLocal -> {
                     val localIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
                     currentFrame.ip += 2
                     stack[currentFrame.basePointer + localIndex] = stack.removeLast()
+                }
+                Opcode.GetBuiltin -> {
+                    val builtinIndex = currentFrame.instructions[currentFrame.ip + 1].toInt()
+                    currentFrame.ip += 1
+                    val definition = builtinFunctions.values.toList()[builtinIndex]
+                    stack.add(definition)
                 }
                 Opcode.GetLocal -> {
                     val localIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)

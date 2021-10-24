@@ -13,8 +13,9 @@ fun main() {
             c + globalNum;
         };
         let outer = fn() {
-            sum(1, 2) + sum(3, 4) + globalNum;
-            };
+            let x = [1, 4, 5];
+            sum(1, 2) + sum(3, 4) + globalNum - len(x);
+        };
         outer() + globalNum;
         """
     val lexer = Lexer(input)

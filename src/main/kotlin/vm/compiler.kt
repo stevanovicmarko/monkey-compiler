@@ -1,9 +1,6 @@
 package vm
 
-import objectrepr.CompiledFunction
-import objectrepr.IntegerRepr
-import objectrepr.ObjectRepr
-import objectrepr.StringRepr
+import objectrepr.*
 import parser.*
 
 class Compiler {
@@ -12,6 +9,12 @@ class Compiler {
     private val scopes = mutableListOf(mainScope)
     private var scopeIndex = 0
     private var symbolTable = SymbolTable(mutableMapOf(), 0)
+
+    init {
+        for ((index, functionName) in builtinFunctions.keys.withIndex()) {
+            symbolTable.defineBuiltin(index, functionName)
+        }
+    }
 
     val currentInstructions get() = scopes[scopeIndex].instructions
 
@@ -177,6 +180,7 @@ class Compiler {
                 when (symbol.scope) {
                     SymbolScope.GLOBAL_SCOPE -> emit(Opcode.SetGlobal, symbol.index)
                     SymbolScope.LOCAL_SCOPE -> emit(Opcode.SetLocal, symbol.index)
+                    else -> throw Exception("Only local and global scopes are supported for let bindings, got scope: ${symbol.scope}")
                 }
             }
             is Identifier -> {
@@ -184,6 +188,7 @@ class Compiler {
                 when (symbol.scope) {
                     SymbolScope.GLOBAL_SCOPE -> emit(Opcode.GetGlobal, symbol.index)
                     SymbolScope.LOCAL_SCOPE -> emit(Opcode.GetLocal, symbol.index)
+                    SymbolScope.BUILTIN_SCOPE -> emit(Opcode.GetBuiltin, symbol.index)
                 }
             }
             is IndexExpression -> {
