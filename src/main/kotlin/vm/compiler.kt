@@ -239,21 +239,20 @@ class Compiler {
             while (idx < scope.instructions.size) {
                 val opcode =
                     Opcode.values().find { it.code == scope.instructions[idx] } ?: throw Exception("Unknown Opcode")
-                val definition = definitions[opcode]
-
-                val singleByteCapacity: UByte = 1u
-                val twoByteCapacity: UByte = 2u
-                val instruction = when (definition) {
-                    singleByteCapacity ->
-                        scope.instructions[idx + 1].toInt().also {
-                            idx++
-                        }
-                    twoByteCapacity ->
-                        scope.instructions[idx + 1].toInt() * 256 + scope.instructions[idx + 2].toInt().also {
-                            idx += 2
-                        }
-
-                    else -> null
+                val definition = definitions[opcode] ?: listOf()
+                var instruction: Int? = null
+                for (value in definition) {
+                    instruction = when (value) {
+                        ONE_BYTE ->
+                            scope.instructions[idx + 1].toInt().also {
+                                idx++
+                            }
+                        TWO_BYTES ->
+                            scope.instructions.extractUShortAt(idx).also {
+                                idx += 2
+                            }
+                        else -> null
+                    }
                 }
                 stringBuilder.append("$opcode, ${instruction?.toString()}\n")
                 idx++

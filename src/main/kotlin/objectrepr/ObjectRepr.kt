@@ -21,7 +21,8 @@ enum class DataNames {
     ARRAY,
     HASH,
     ERROR,
-    COMPILED_FUNCTION
+    COMPILED_FUNCTION,
+    CLOSURE
 }
 
 data class IntegerRepr(val value: Int) : Hashable {
@@ -169,4 +170,14 @@ data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 
     //    override fun toString(): String {
     //
     //    }
+}
+
+data class Closure(val fn: CompiledFunction, val freeVariables: List<ObjectRepr>): ObjectRepr {
+    override fun objectType(): ObjectType {
+        return DataNames.CLOSURE.toString()
+    }
+
+    override fun inspect(): String {
+        return "Closure"
+    }
 }

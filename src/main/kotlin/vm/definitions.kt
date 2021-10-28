@@ -2,6 +2,9 @@ package vm
 
 import objectrepr.CompiledFunction
 
+const val ONE_BYTE: UByte = 1u
+const val TWO_BYTES: UByte = 2u
+
 enum class Opcode(val code: UByte) {
     Constant(0x00u),
     Add(0x01u),
@@ -29,24 +32,26 @@ enum class Opcode(val code: UByte) {
     GetLocal(0x17u),
     SetLocal(0x18u),
     GetBuiltin(0x19u),
+    Closure(0x20u),
     Pop(0xFFu)
 }
 
-// This map represents how many bytes can be used for a single instruction.
+// This map represents how many bytes can be used for individual instructions after the opcode instruction.
 // e.g. max number of constants is 65535, so Opcode.Constant will use two bytes
 // max number of Call arguments is 255, so Opcode.Call will use a single byte
-val definitions: Map<Opcode, UByte> = mapOf(
-    Opcode.Constant to 2u,
-    Opcode.JumpNotTruthy to 2u,
-    Opcode.Jump to 2u,
-    Opcode.GetGlobal to 2u,
-    Opcode.SetGlobal to 2u,
-    Opcode.GetLocal to 2u,
-    Opcode.SetLocal to 2u,
-    Opcode.Array to 2u,
-    Opcode.Hash to 2u,
-    Opcode.Call to 1u,
-    Opcode.GetBuiltin to 1u
+val definitions: Map<Opcode, List<UByte>> = mapOf(
+    Opcode.Constant to listOf(2u),
+    Opcode.JumpNotTruthy to listOf(2u),
+    Opcode.Jump to listOf(2u),
+    Opcode.GetGlobal to listOf(2u),
+    Opcode.SetGlobal to listOf(2u),
+    Opcode.GetLocal to listOf(2u),
+    Opcode.SetLocal to listOf(2u),
+    Opcode.Array to listOf(2u),
+    Opcode.Hash to listOf(2u),
+    Opcode.Call to listOf(1u),
+    Opcode.GetBuiltin to listOf(1u),
+    Opcode.Closure to listOf(2u, 1u)
 )
 
 fun List<UByte>.extractUShortAt(startingPoint: Int): Int {
@@ -71,15 +76,17 @@ fun Int.toBigEndianByteList(): List<UByte> {
 }
 
 fun makeBytecodeInstruction(opcode: Opcode, vararg operands: Int): List<UByte> {
-    val definition = definitions[opcode]
     val byteCodeInstruction = mutableListOf(opcode.code)
-    val singleByteCapacity: UByte = 1u
-    val twoByteCapacity: UByte = 2u
-    for (operand in operands) {
-        when (definition) {
-            singleByteCapacity -> byteCodeInstruction.add(operand.toUByte())
-            twoByteCapacity -> byteCodeInstruction.addAll(operand.toBigEndianByteList())
-            null -> throw Exception("$opcode should have no operands")
+    val definition = definitions[opcode] ?: return byteCodeInstruction
+
+    if (operands.size != definition.size) {
+        throw Exception("Invalid number of operands for $opcode. Expected: ${definition.size}, got: ${operands.size}")
+    }
+
+    for ((index, value) in definition.withIndex()) {
+        when (value) {
+            ONE_BYTE -> byteCodeInstruction.add(operands[index].toUByte())
+            TWO_BYTES -> byteCodeInstruction.addAll(operands[index].toBigEndianByteList())
         }
     }
     return byteCodeInstruction
