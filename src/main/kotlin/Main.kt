@@ -23,7 +23,7 @@ fun main() {
     val program = parser.parseProgram()
     val compiler = Compiler()
     compiler.compile(program)
-    println(compiler.toString())
+    println(compiler)
     val vm  = VM(compiler.currentInstructions, compiler.constants)
     vm.run()
 }

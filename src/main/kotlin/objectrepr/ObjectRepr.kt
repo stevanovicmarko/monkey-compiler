@@ -7,7 +7,7 @@ interface ObjectRepr
 
 data class IntegerRepr(val value: Int) : Hashable {
     override fun toString(): String {
-        return "IntegerRepr, value: $value"
+        return "Int: $value"
     }
 
     override fun hashKey(): HashKey {
@@ -17,7 +17,7 @@ data class IntegerRepr(val value: Int) : Hashable {
 
 data class BooleanRepr(val value: Boolean) : Hashable {
     override fun toString(): String {
-        return "BooleanRepr, value: $value"
+        return "Boolean: $value"
     }
 
     override fun hashKey(): HashKey {
@@ -33,13 +33,13 @@ class NullRepr : ObjectRepr {
 
 data class ReturnRepr(val value: ObjectRepr?) : ObjectRepr {
     override fun toString(): String {
-        return "ReturnRepr, value: ${value.toString()}"
+        return "Return value: ${value.toString()}"
     }
 }
 
 data class ErrorRepr(val message: String) : ObjectRepr {
     override fun toString(): String {
-        return "ErrorRepr, value: $message"
+        return "Error: $message"
     }
 }
 
@@ -49,13 +49,13 @@ data class FunctionRepr(
     val environment: Environment?
 ) : ObjectRepr {
     override fun toString(): String {
-        return "FunctionRepr, parameters: ${parameters}, body: ${body}, environment: $environment"
+        return "Function, parameters: ${parameters}, body: ${body}, environment: $environment"
     }
 }
 
 data class StringRepr(val value: String) : Hashable {
     override fun toString(): String {
-        return "StringRepr, value: $value"
+        return "String: $value"
     }
 
     override fun hashKey(): HashKey {
@@ -65,7 +65,7 @@ data class StringRepr(val value: String) : Hashable {
 
 data class ArrayRepr(val elements: List<ObjectRepr?>) : ObjectRepr {
     override fun toString(): String {
-        return "ArrayRepr, elements: $elements"
+        return "Array: $elements"
     }
 }
 
@@ -79,13 +79,13 @@ data class HashPair(val key: Hashable, val value: ObjectRepr?)
 
 data class HashRepr(val pairs: MutableMap<HashKey, HashPair>) : ObjectRepr {
     override fun toString(): String {
-        return "HashRepr, pairs: $pairs"
+        return "Hash: $pairs"
     }
 }
 
 data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr?) : ObjectRepr {
     override fun toString(): String {
-        return "BuiltinRepr, pairs: $fn"
+        return "Builtin Function: $fn"
     }
 }
 
@@ -93,7 +93,7 @@ data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 
     ObjectRepr {
     // TODO: Add printing of instructions as Compiler's toString() method
     override fun toString(): String {
-        return "CompiledFunction, instructions: $instructions, numLocals: $numLocals, numParameters: $numParameters"
+        return "Compiled Function, instructions: $instructions, numLocals: $numLocals, numParameters: $numParameters"
     }
 }
 
