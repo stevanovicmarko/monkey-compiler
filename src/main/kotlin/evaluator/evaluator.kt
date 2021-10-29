@@ -277,7 +277,7 @@ fun evalIndexExpression(left: ObjectRepr?, index: ObjectRepr?): ObjectRepr? {
 
 fun evalHashIndexExpression(hashRepr: HashRepr, index: ObjectRepr?): ObjectRepr? {
     if (index !is Hashable) {
-        return ErrorRepr("unusable as a hash key: ${index?.objectType()}")
+        return ErrorRepr("unusable as a hash key: $index")
     }
     val pair = hashRepr.pairs[index.hashKey()]
     return pair?.value
@@ -294,7 +294,7 @@ fun evalHashLiteral(node: HashLiteral, environment: Environment): ObjectRepr {
         }
 
         if (key !is Hashable) {
-            return ErrorRepr("unusable as a hash key: ${key?.objectType()}")
+            return ErrorRepr("unusable as a hash key: $key")
         }
 
         val value = eval(valueNode, environment)

@@ -92,15 +92,6 @@ data class VM(
         } else throw Exception("Invalid index operands: $left, $index")
     }
 
-//    fun extractInstructionFromBytecode(opcode: Opcode, ): Int {
-//        println(opcode)
-//        return when (definitions[opcode]) {
-//            1 -> instructions[currentFrame.ip+1].toInt()
-//            2 -> instructions.extractUShortAt(currentFrame.ip)
-//            else -> throw Exception("Instruction: $opcode must be 1 or 2 bytes in length")
-//        }
-//    }
-
     fun run() {
         // Current frame is the last frame (top of the stack)
         while (currentFrame.ip < currentFrame.instructions.size - 1) {
