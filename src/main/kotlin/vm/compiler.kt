@@ -240,9 +240,9 @@ class Compiler {
                 val opcode =
                     Opcode.values().find { it.code == scope.instructions[idx] } ?: throw Exception("Unknown Opcode")
                 val definition = definitions[opcode] ?: listOf()
-                var instruction: Int? = null
+                val instructions = mutableListOf<Int?>()
                 for (value in definition) {
-                    instruction = when (value) {
+                    val instruction = when (value) {
                         ONE_BYTE ->
                             scope.instructions[idx + 1].toInt().also {
                                 idx++
@@ -253,8 +253,9 @@ class Compiler {
                             }
                         else -> null
                     }
+                    instructions.add(instruction)
                 }
-                stringBuilder.append("$opcode, ${instruction?.toString()}\n")
+                stringBuilder.append("$opcode, ${instructions.toString()}\n")
                 idx++
             }
         }
