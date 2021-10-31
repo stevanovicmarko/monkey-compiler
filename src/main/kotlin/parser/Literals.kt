@@ -32,8 +32,9 @@ data class StringLiteral(override val tokenType: TokenType = TokenType.STRING, v
 
 data class FunctionLiteral(
     override val tokenType: TokenType = TokenType.FUNCTION,
-    var parameters: MutableList<Identifier>?,
-    var body: BlockStatement?
+    var parameters: MutableList<Identifier>? = null,
+    var body: BlockStatement? = null,
+    var functionName: String? = null,
 ) : Expression(tokenType) {
     override fun toString(): String {
         return "${tokenLiteral()} ( ${parameters?.joinToString(", ")} ) $body"

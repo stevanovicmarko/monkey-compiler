@@ -4,7 +4,8 @@ enum class SymbolScope {
     GLOBAL_SCOPE,
     LOCAL_SCOPE,
     BUILTIN_FUNCTION_SCOPE,
-    FREE_VARIABLES_SCOPE
+    FREE_VARIABLES_SCOPE,
+    FUNCTION_SCOPE
 }
 
 data class Symbol(val name: String, val scope: SymbolScope, val index: Int)
@@ -30,6 +31,12 @@ data class SymbolTable(
 
     fun defineBuiltinSymbol(index: Int, name: String): Symbol {
         val symbol = Symbol(name, scope = SymbolScope.BUILTIN_FUNCTION_SCOPE, index)
+        store[name] = symbol
+        return symbol
+    }
+
+    fun defineFunctionName(name: String): Symbol {
+        val symbol = Symbol(name, SymbolScope.FUNCTION_SCOPE, 0)
         store[name] = symbol
         return symbol
     }

@@ -23,7 +23,6 @@ fun eval(node: Node?, environment: Environment): ObjectRepr? {
             if (expressionValue is ErrorRepr) {
                 return expressionValue
             }
-            // TODO: Get rid of this ugly check, because of Identifier? nullability
             val name = node.name
             if (name != null) {
                 environment.set(name.value, expressionValue)

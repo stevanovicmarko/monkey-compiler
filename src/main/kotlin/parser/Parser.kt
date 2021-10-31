@@ -148,6 +148,11 @@ class Parser(private val lexer: Lexer) {
 
         statement.value = parseExpression(Precedence.LOWEST)
 
+        val value = statement.value
+        if (value is FunctionLiteral) {
+            value.functionName = statement.name?.value
+        }
+
         if (peekTokenIs(TokenType.SEMICOLON)) {
             nextToken()
         }

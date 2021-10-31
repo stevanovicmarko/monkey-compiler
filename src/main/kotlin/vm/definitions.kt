@@ -34,6 +34,7 @@ enum class Opcode(val code: UByte) {
     GetBuiltinFunction(0x19u),
     Closure(0x20u),
     GetFreeVar(0x21u),
+    GetCurrentClosure(0x22u),
     Pop(0xFFu)
 }
 

@@ -64,8 +64,8 @@ class Compiler {
     private fun changeOperand(operandPosition: Int, operand: Int) {
         val bytecodeInstruction = scopes[scopeIndex].instructions[operandPosition]
         val opcode = Opcode.values().find { it.code == bytecodeInstruction }
-        if (opcode != null) {
-            val newInstruction = makeBytecodeInstruction(opcode, operand)
+        opcode?.let {
+            val newInstruction = makeBytecodeInstruction(it, operand)
             replaceInstruction(operandPosition, newInstruction)
         }
     }
@@ -98,6 +98,7 @@ class Compiler {
             SymbolScope.LOCAL_SCOPE -> emit(Opcode.GetLocal, symbol.index)
             SymbolScope.BUILTIN_FUNCTION_SCOPE -> emit(Opcode.GetBuiltinFunction, symbol.index)
             SymbolScope.FREE_VARIABLES_SCOPE -> emit(Opcode.GetFreeVar, symbol.index)
+            SymbolScope.FUNCTION_SCOPE -> emit(Opcode.GetCurrentClosure)
         }
     }
 
@@ -204,6 +205,11 @@ class Compiler {
             is FunctionLiteral -> {
                 enterScope()
 
+                val functionName = node.functionName
+                functionName?.let {
+                    symbolTable.defineFunctionName(functionName)
+                }
+
                 node.parameters?.forEach {
                     symbolTable.defineSymbol(it.value)
                 }
@@ -227,7 +233,8 @@ class Compiler {
                 val compiledFunction = CompiledFunction(
                     instructions,
                     numLocals,
-                    node.parameters?.size ?: throw Exception("Node parameters is not a list: ${node.parameters}")
+                    node.parameters?.size ?: throw Exception("Node parameters is not a list: ${node.parameters}"),
+                    functionName
                 )
                 emit(Opcode.Closure, addConstant(compiledFunction), freeSymbols.size)
             }
@@ -267,7 +274,7 @@ class Compiler {
                     }
                     instructions.add(instruction)
                 }
-                stringBuilder.append("$opcode, ${instructions.toString()}\n")
+                stringBuilder.append("$opcode, $instructions\n")
                 idx++
             }
         }

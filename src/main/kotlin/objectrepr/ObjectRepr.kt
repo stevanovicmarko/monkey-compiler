@@ -3,7 +3,7 @@ package objectrepr
 import parser.BlockStatement
 import parser.Identifier
 
-interface ObjectRepr
+sealed interface ObjectRepr
 
 data class IntegerRepr(val value: Int) : Hashable {
     override fun toString(): String {
@@ -89,9 +89,8 @@ data class BuiltinRepr(val fn: (Array<out ObjectRepr?>) -> ObjectRepr?) : Object
     }
 }
 
-data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 0, val numParameters: Int = 0) :
+data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 0, val numParameters: Int = 0, var functionName: String? = null) :
     ObjectRepr {
-    // TODO: Add printing of instructions as Compiler's toString() method
     override fun toString(): String {
         return "Compiled Function, numLocals: $numLocals, numParameters: $numParameters"
     }
@@ -99,6 +98,6 @@ data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 
 
 data class Closure(val fn: CompiledFunction, val freeVariables: List<ObjectRepr>) : ObjectRepr {
     override fun toString(): String {
-        return "Closure, fn: $fn, freeVariables: $freeVariables"
+        return "Function: ${fn.functionName} , freeVariables: $freeVariables"
     }
 }

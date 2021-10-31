@@ -113,10 +113,8 @@ data class VM(
                     if (left is IntegerRepr && right is IntegerRepr) {
                         executeIntegerComparison(opcode, left, right)
                     } else if (opcode == Opcode.Equal) {
-                        // FIX this comparison
                         stack.add(BooleanRepr(left == right))
                     } else if (opcode == Opcode.NotEqual) {
-                        // FIX this comparison
                         stack.add(BooleanRepr(left != right))
                     }
                 }
@@ -168,14 +166,12 @@ data class VM(
                     val numOfArguments = currentFrame.instructions[currentFrame.ip + 1].toInt()
                     currentFrame.ip += 1
 
-                    when (val callee = stack[stack.size - 1 - numOfArguments]) {
+                    when (val callee = stack[stack.size - numOfArguments - 1]) {
                         is Closure -> {
                             val frame = Frame(callee, -1, stack.size - numOfArguments)
                             if (numOfArguments != callee.fn.numParameters) {
-                                throw Exception("Function call ${callee.toString()}: Invalid number of parameters, expected ${callee.fn.numParameters}, got $numOfArguments")
+                                throw Exception("Function call ${callee.toString()}: Invalid number of parameters, expected: ${callee.fn.numParameters}, got: $numOfArguments")
                             }
-//                            val stackSlots = MutableList(callee.fn.numLocals) { NullRepr() }
-//                            stack.addAll(stackSlots)
                             frames.add(frame)
                         }
                         is BuiltinRepr -> {
@@ -237,6 +233,10 @@ data class VM(
                     val currenClosure = currentFrame.closure
                     stack.add(currenClosure.freeVariables[freeIndex])
                 }
+                Opcode.GetCurrentClosure -> {
+                    val currentClosure = currentFrame.closure
+                    stack.add(currentClosure)
+                }
                 Opcode.ReturnValue -> {
                     val returnValue = stack.removeLast()
                     val frame = frames.removeLast()
@@ -251,9 +251,9 @@ data class VM(
                 Opcode.NullOp -> stack.add(NullRepr())
                 Opcode.Pop -> stack.removeLast()
             }
-//            if (stack.size == 1 && stack.last() !is Closure) {
+            if (stack.size == 1 && stack.first() !is Closure) {
                 println(stack)
-//            }
+            }
         }
     }
 }
