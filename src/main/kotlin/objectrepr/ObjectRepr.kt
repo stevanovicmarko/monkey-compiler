@@ -93,7 +93,7 @@ data class CompiledFunction(val instructions: List<UByte>, val numLocals: Int = 
     ObjectRepr {
     // TODO: Add printing of instructions as Compiler's toString() method
     override fun toString(): String {
-        return "Compiled Function, instructions: $instructions, numLocals: $numLocals, numParameters: $numParameters"
+        return "Compiled Function, numLocals: $numLocals, numParameters: $numParameters"
     }
 }
 

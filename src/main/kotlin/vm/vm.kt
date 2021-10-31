@@ -3,9 +3,6 @@ package vm
 import evaluator.isTruthy
 import objectrepr.*
 
-const val MAX_STACK_SIZE = 1024
-const val MAX_NUMBER_OF_GLOBAL_VARS = 65536
-
 data class VM(
     val instructions: List<UByte>,
     val constants: List<ObjectRepr>
@@ -13,7 +10,8 @@ data class VM(
     private var stack = mutableListOf<ObjectRepr>()
     private var globals = mutableListOf<ObjectRepr>()
     private val mainFunc = CompiledFunction(instructions)
-    private val frames = mutableListOf(Frame(mainFunc))
+    private val mainClosure = Closure(mainFunc, listOf())
+    private val frames = mutableListOf(Frame(mainClosure))
 
     private val currentFrame get() = frames.last()
 
@@ -148,19 +146,6 @@ data class VM(
                         currentFrame.ip = position - 1
                     }
                 }
-                Opcode.SetGlobal -> {
-                    val globalIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
-                    currentFrame.ip += 2
-                    val globalValue = stack.removeLast()
-                    // Same thing twice, global index might be needed
-                    globals.add(globalValue)
-                    globals[globalIndex] = globalValue
-                }
-                Opcode.GetGlobal -> {
-                    val globalIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
-                    currentFrame.ip += 2
-                    stack.add(globals[globalIndex])
-                }
                 Opcode.Array -> {
                     val numberOfElements = currentFrame.instructions.extractUShortAt(currentFrame.ip)
                     currentFrame.ip += 2
@@ -182,43 +167,75 @@ data class VM(
                 Opcode.Call -> {
                     val numOfArguments = currentFrame.instructions[currentFrame.ip + 1].toInt()
                     currentFrame.ip += 1
-                    val callee = stack[stack.size - 1 - numOfArguments]
 
-                    when (callee) {
-                        is CompiledFunction -> {
+                    when (val callee = stack[stack.size - 1 - numOfArguments]) {
+                        is Closure -> {
                             val frame = Frame(callee, -1, stack.size - numOfArguments)
-                            if (numOfArguments != callee.numParameters) {
-                                throw Exception("Function call ${callee.toString()}: Invalid number of parameters, expected ${callee.numParameters}, got $numOfArguments")
+                            if (numOfArguments != callee.fn.numParameters) {
+                                throw Exception("Function call ${callee.toString()}: Invalid number of parameters, expected ${callee.fn.numParameters}, got $numOfArguments")
                             }
+//                            val stackSlots = MutableList(callee.fn.numLocals) { NullRepr() }
+//                            stack.addAll(stackSlots)
                             frames.add(frame)
-                            // TODO: stack slotting should be removed at some point
-                            val stackSlots = MutableList(frame.basePointer + callee.numLocals - 1) { NullRepr() }
-                            stack.addAll(stackSlots)
                         }
                         is BuiltinRepr -> {
                             val args = stack.subList(stack.size - numOfArguments, stack.size)
                             val result = callee.fn(*args.toTypedArray())
-                            stack = stack.subList(0, stack.size - numOfArguments -1)
+                            stack = stack.subList(0, stack.size - numOfArguments - 1)
                             stack.add(result ?: NullRepr())
                         }
                         else -> throw Exception("calling non-function: $callee")
                     }
                 }
-                Opcode.SetLocal -> {
-                    val localIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
+                Opcode.Closure -> {
+                    val constIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
                     currentFrame.ip += 2
-                    stack[currentFrame.basePointer + localIndex] = stack.removeLast()
+                    val numOfFreeVariables = currentFrame.instructions[currentFrame.ip + 1].toInt()
+                    currentFrame.ip += 1
+                    val compiledFunction = constants[constIndex] as? CompiledFunction
+                        ?: throw Exception("Constant: $constants at index: $constIndex is not a compiled function")
+
+                    val freeVars = mutableListOf<ObjectRepr>()
+                    for (i in 0 until numOfFreeVariables) {
+                        freeVars.add(stack[stack.size - numOfFreeVariables + i])
+                    }
+                    val closure = Closure(compiledFunction, freeVars)
+                    stack.add(closure)
                 }
-                Opcode.GetBuiltin -> {
+                Opcode.GetBuiltinFunction -> {
                     val builtinIndex = currentFrame.instructions[currentFrame.ip + 1].toInt()
                     currentFrame.ip += 1
                     val definition = builtinFunctions.values.toList()[builtinIndex]
                     stack.add(definition)
                 }
+                Opcode.SetGlobal -> {
+                    val globalIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
+                    currentFrame.ip += 2
+                    val globalValue = stack.removeLast()
+                    // Same thing twice, global index might be needed
+                    globals.add(globalValue)
+                    globals[globalIndex] = globalValue
+                }
+                Opcode.GetGlobal -> {
+                    val globalIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
+                    currentFrame.ip += 2
+                    stack.add(globals[globalIndex])
+                }
+                Opcode.SetLocal -> {
+                    val localIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
+                    currentFrame.ip += 2
+                    stack[currentFrame.basePointer + localIndex] = stack.last()
+                }
                 Opcode.GetLocal -> {
                     val localIndex = currentFrame.instructions.extractUShortAt(currentFrame.ip)
                     currentFrame.ip += 2
                     stack.add(stack[currentFrame.basePointer + localIndex])
+                }
+                Opcode.GetFreeVar -> {
+                    val freeIndex =  currentFrame.instructions[currentFrame.ip + 1].toInt()
+                    currentFrame.ip += 1
+                    val currenClosure = currentFrame.closure
+                    stack.add(currenClosure.freeVariables[freeIndex])
                 }
                 Opcode.ReturnValue -> {
                     val returnValue = stack.removeLast()
@@ -234,7 +251,9 @@ data class VM(
                 Opcode.NullOp -> stack.add(NullRepr())
                 Opcode.Pop -> stack.removeLast()
             }
-            println(stack)
+//            if (stack.size == 1 && stack.last() !is Closure) {
+                println(stack)
+//            }
         }
     }
 }

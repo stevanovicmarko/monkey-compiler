@@ -12,7 +12,7 @@ class Compiler {
 
     init {
         for ((index, functionName) in builtinFunctions.keys.withIndex()) {
-            symbolTable.defineBuiltin(index, functionName)
+            symbolTable.defineBuiltinSymbol(index, functionName)
         }
     }
 
@@ -74,7 +74,7 @@ class Compiler {
         val scope = CompilationScope(mutableListOf(), null, null)
         scopes.add(scope)
         scopeIndex++
-        symbolTable = SymbolTable(mutableMapOf(), 0, symbolTable)
+        symbolTable = SymbolTable(mutableMapOf(), 0, mutableListOf(), symbolTable)
     }
 
     private fun leaveScope(): List<UByte> {
@@ -90,6 +90,15 @@ class Compiler {
             ?: throw Exception("Invalid position in the last instruction")
         replaceInstruction(lastPos, makeBytecodeInstruction(Opcode.ReturnValue))
         scopes[scopeIndex].lastInstruction?.opcode = Opcode.ReturnValue
+    }
+
+    private fun loadSymbol(symbol: Symbol) {
+        when (symbol.scope) {
+            SymbolScope.GLOBAL_SCOPE -> emit(Opcode.GetGlobal, symbol.index)
+            SymbolScope.LOCAL_SCOPE -> emit(Opcode.GetLocal, symbol.index)
+            SymbolScope.BUILTIN_FUNCTION_SCOPE -> emit(Opcode.GetBuiltinFunction, symbol.index)
+            SymbolScope.FREE_VARIABLES_SCOPE -> emit(Opcode.GetFreeVar, symbol.index)
+        }
     }
 
     fun compile(node: Node?) {
@@ -174,9 +183,9 @@ class Compiler {
                 emit(Opcode.Hash, node.pairs.size * 2)
             }
             is LetStatement -> {
-                compile(node.value)
                 val identifierName = node.name?.value ?: throw Exception("Identifier for ${node.name} not found.")
-                val symbol = symbolTable.define(identifierName)
+                val symbol = symbolTable.defineSymbol(identifierName)
+                compile(node.value)
                 when (symbol.scope) {
                     SymbolScope.GLOBAL_SCOPE -> emit(Opcode.SetGlobal, symbol.index)
                     SymbolScope.LOCAL_SCOPE -> emit(Opcode.SetLocal, symbol.index)
@@ -184,12 +193,8 @@ class Compiler {
                 }
             }
             is Identifier -> {
-                val symbol = symbolTable.resolve(node.value) ?: throw Exception("Unknown symbol for ${node.value}")
-                when (symbol.scope) {
-                    SymbolScope.GLOBAL_SCOPE -> emit(Opcode.GetGlobal, symbol.index)
-                    SymbolScope.LOCAL_SCOPE -> emit(Opcode.GetLocal, symbol.index)
-                    SymbolScope.BUILTIN_SCOPE -> emit(Opcode.GetBuiltin, symbol.index)
-                }
+                val symbol = symbolTable.resolve(node.value) ?: throw Exception("Unknown symbol: ${node.value}")
+                loadSymbol(symbol)
             }
             is IndexExpression -> {
                 compile(node.left)
@@ -200,7 +205,7 @@ class Compiler {
                 enterScope()
 
                 node.parameters?.forEach {
-                    symbolTable.define(it.value)
+                    symbolTable.defineSymbol(it.value)
                 }
 
                 compile(node.body)
@@ -210,14 +215,21 @@ class Compiler {
                 if (!lastInstructionIs(Opcode.ReturnValue)) {
                     emit(Opcode.Return)
                 }
-                val numDefinitions = symbolTable.numDefinitions
+
+                val freeSymbols = symbolTable.freeSymbols
+                val numLocals = symbolTable.numDefinitions
                 val instructions = leaveScope()
+
+                for (symbol in freeSymbols) {
+                    loadSymbol(symbol)
+                }
+
                 val compiledFunction = CompiledFunction(
                     instructions,
-                    numDefinitions,
+                    numLocals,
                     node.parameters?.size ?: throw Exception("Node parameters is not a list: ${node.parameters}")
                 )
-                emit(Opcode.Constant, addConstant(compiledFunction))
+                emit(Opcode.Closure, addConstant(compiledFunction), freeSymbols.size)
             }
             is CallExpression -> {
                 compile(node.function)
@@ -233,7 +245,7 @@ class Compiler {
     }
 
     override fun toString(): String {
-        val stringBuilder = StringBuilder("INSTRUCTIONS:\n")
+        val stringBuilder = StringBuilder("----------------------\nINSTRUCTIONS:\n")
         for (scope in scopes) {
             var idx = 0
             while (idx < scope.instructions.size) {
@@ -263,6 +275,7 @@ class Compiler {
         for (c in constants) {
             stringBuilder.append("$c\n")
         }
+        stringBuilder.append("----------------------\n")
         return stringBuilder.toString()
     }
 }

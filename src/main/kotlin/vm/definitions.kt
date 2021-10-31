@@ -1,6 +1,6 @@
 package vm
 
-import objectrepr.CompiledFunction
+import objectrepr.Closure
 
 const val ONE_BYTE: UByte = 1u
 const val TWO_BYTES: UByte = 2u
@@ -31,8 +31,9 @@ enum class Opcode(val code: UByte) {
     Return(0x16u),
     GetLocal(0x17u),
     SetLocal(0x18u),
-    GetBuiltin(0x19u),
+    GetBuiltinFunction(0x19u),
     Closure(0x20u),
+    GetFreeVar(0x21u),
     Pop(0xFFu)
 }
 
@@ -50,8 +51,9 @@ val definitions: Map<Opcode, List<UByte>> = mapOf(
     Opcode.Array to listOf(2u),
     Opcode.Hash to listOf(2u),
     Opcode.Call to listOf(1u),
-    Opcode.GetBuiltin to listOf(1u),
-    Opcode.Closure to listOf(2u, 1u)
+    Opcode.GetBuiltinFunction to listOf(1u),
+    Opcode.Closure to listOf(2u, 1u),
+    Opcode.GetFreeVar to listOf(1u)
 )
 
 fun List<UByte>.extractUShortAt(startingPoint: Int): Int {
@@ -67,8 +69,8 @@ data class CompilationScope(
     var previousInstruction: EmittedInstruction?
 )
 
-data class Frame(val compiledFunction: CompiledFunction, var ip: Int = -1, var basePointer: Int = 0) {
-    val instructions get() = compiledFunction.instructions.toMutableList()
+data class Frame(val closure: Closure, var ip: Int = -1, var basePointer: Int = 0) {
+    val instructions get() = closure.fn.instructions.toMutableList()
 }
 
 fun Int.toBigEndianByteList(): List<UByte> {

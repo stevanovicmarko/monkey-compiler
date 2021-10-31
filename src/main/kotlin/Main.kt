@@ -6,18 +6,18 @@ import vm.Compiler
 import vm.VM
 
 fun main() {
-    val input = """
-        let globalNum = 10;
-        let sum = fn(a, b) {
-            let c = a + b;
-            c + globalNum;
-        };
-        let outer = fn() {
-            let x = [1, 4, 5];
-            sum(1, 2) + sum(3, 4) + globalNum - len(x);
-        };
-        outer() + globalNum;
-        """
+    val input = """ 
+	let newAdderOuter = fn(a, b) {
+		let c = a + b;
+		fn(d) {
+			let e = d + c;
+			fn(f) { e + f; };
+		};
+	};
+	let newAdderInner = newAdderOuter(1, 2)
+	let adder = newAdderInner(3);
+	adder(8);
+    """
     val lexer = Lexer(input)
     val parser = Parser(lexer)
     val program = parser.parseProgram()
