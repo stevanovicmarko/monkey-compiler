@@ -5,4 +5,8 @@
 ## Installation and usage
 * Install JDK 11 and maven.
 * Use `mvn install` to generate standalone jar.
-* There are hardcoded examples in the `Main.kt`. Just run `Main.kt` to see it in action. 
+* Go to `target` folder.
+* Run some examples in the `examples` folder:
+ ```
+   java -jar monkey.interpreter-1.0-SNAPSHOT-jar-with-dependencies.jar ../examples/fibonacci.monkey 
+ ```
